@@ -38,7 +38,7 @@ JSONAR uses [Scalaz](http://code.google.com/p/scalaz/) for the ValidationNel typ
 To produce JSON from an instance of JSONValue use the Printer object:
 
 ```scala
-val json: String = Printer.print(JSONObject("key" -> "value"))
+val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("value")))
 ```
     
 ## Design.
