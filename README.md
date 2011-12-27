@@ -3,6 +3,7 @@
 JSONAR is a JSON library for Scala, offering the ability to parse text for JSON into an object graph and similarly turn an object graph into a String.
 
 JSONAR avoids pitfalls of some JSON libraries, like the inbuilt Scala implementation, by offering the following features:
+
 * Parsing preserves the errors without throwing exceptions, making for simpler code as you just need to map or flatMap the result.
 * Rigidly typing the JSON objects avoiding types like Map[String, Any], to ensure a List couldn't be used as the key in a JSONObject.
 * Sensible printing of JSON from the graph, as stock Scala provides none, with tests to ensure that going forwards and backwards parsing and printing produces the same results.
