@@ -1,4 +1,4 @@
-package com.github.seanparsons.jsonor
+package com.github.seanparsons.jsonar
 
 import annotation.tailrec
 

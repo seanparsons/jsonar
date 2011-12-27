@@ -1,10 +1,9 @@
-package com.github.seanparsons.jsonor
+package com.github.seanparsons.jsonar
 
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Arbitrary
-import net.liftweb.json._
 import org.scalacheck.Gen
 
 object JSONGenerators {

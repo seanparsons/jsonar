@@ -1,4 +1,4 @@
-package com.github.seanparsons.jsonor
+package com.github.seanparsons.jsonar
 
 import org.scalatest.FeatureSpec
 import org.scalatest.matchers.MustMatchers
@@ -6,7 +6,7 @@ import org.scalatest.prop.Checkers
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop
 import org.scalacheck.Prop._
-import com.github.seanparsons.jsonor.JSONEscaping._
+import com.github.seanparsons.jsonar.JSONEscaping._
 
 case class JSONEscapingSpecification () extends FeatureSpec
                                         with MustMatchers

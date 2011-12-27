@@ -1,4 +1,4 @@
-package com.github.seanparsons.jsonor
+package com.github.seanparsons.jsonar
 
 import org.parboiled.scala._
 import java.lang.String
@@ -7,6 +7,8 @@ import scalaz._
 import Scalaz._
 
 object Parser extends Parser {
+
+  case class ParserError(startIndex: Int, endIndex: Int, errorMessage: String)
 
   def jsonRule: Rule1[JSONValue] = rule { whitespaceRule ~ (jsonObjectRule | jsonArrayRule) ~ EOI }
 
@@ -19,7 +21,7 @@ object Parser extends Parser {
   }
 
   def valueRule: Rule1[JSONValue] = rule {
-    jsonStringRule | jsonDecimalRule | jsonIntRule | jsonObjectRule | jsonArrayRule | jsonBoolTrueRule | jsonBoolFalseRule | jsonNullRule
+    jsonStringRule | jsonIntRule | jsonDecimalRule | jsonObjectRule | jsonArrayRule | jsonBoolTrueRule | jsonBoolFalseRule | jsonNullRule
   }
 
   def jsonStringRule: Rule1[JSONString] = rule {
@@ -66,33 +68,20 @@ object Parser extends Parser {
 
   def whitespaceRule: Rule0 = rule { zeroOrMore(anyOf(" \n\r\t\f")) }
 
-  /**
-   * We redefine the default string-to-rule conversion to also match trailing whitespace if the string ends with
-   * a blank, this keeps the rules free from most whitespace matching clutter
-   */
   override implicit def toRule(string: String) =
     if (string.endsWith(" "))
       str(string.trim) ~ whitespaceRule
     else
       str(string)
 
-  /**
-   * The main parsing method. Uses a ReportingParseRunner (which only reports the first error) for simplicity.
-   */
-  def parse(json: String): ValidationNEL[String, JSONValue] = {
+  def parse(json: String): ValidationNEL[ParserError, JSONValue] = {
     val parsingResult = ReportingParseRunner(jsonRule).run(json)
     parsingResult.result match {
-      case Some(astRoot) => astRoot.successNel[String]
+      case Some(astRoot) => astRoot.successNel[ParserError]
       case None => parsingResult.parseErrors
-                      .map{error =>
-                        val start = error.getStartIndex
-                        val end = error.getEndIndex
-                        val length = end - start
-                        val escapedText = json.drop(start - 5).take(length + 10).map(char => "\\u%04x".format(char: Int))
-                        "%s-%s:%s:%s".format(error.getStartIndex, error.getEndIndex, error.getErrorMessage ?? "Parse error.", escapedText)
-                      }
+                      .map(error => ParserError(error.getStartIndex, error.getEndIndex, error.getErrorMessage ?? "Parse error."))
                       .toNel
-                      .getOrElse(NonEmptyList("No parse errors."))
+                      .getOrElse(NonEmptyList(ParserError(0, json.size, "No parse errors.")))
                       .fail[JSONValue]
     }
   }
