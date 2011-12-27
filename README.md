@@ -44,6 +44,7 @@ val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("val
 ## Design.
 
 JSONAR attempts to be as tightly typed as possible, even to the point of providing two specific objects for the two values of a boolean:
+
     scala> println(JSONBoolTrue.value)
     true
 
