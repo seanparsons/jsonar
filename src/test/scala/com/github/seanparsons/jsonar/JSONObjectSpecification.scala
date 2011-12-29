@@ -17,7 +17,15 @@ case class JSONObjectSpecification() extends FeatureSpec
     scenario("Passing in a collection of fields") {
       check(forAll(jsonObjectFieldsGenerator()){fields =>
         val jsonObject = JSONObject(fields: _*)
-        jsonObject.fields == fields.toMap
+        ("jsonObject = " + jsonObject) |: jsonObject.fields == fields.toMap
+      })
+    }
+  }
+  feature("map") {
+    scenario("Identity transform returns identical instance") {
+      check(forAll(jsonObjectGenerator()){jsonObject =>
+        val mapped = jsonObject.map(identity)
+        ("mapped = " + mapped) |: jsonObject == mapped
       })
     }
   }
