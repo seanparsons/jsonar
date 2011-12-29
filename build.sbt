@@ -10,6 +10,8 @@ libraryDependencies += "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test"
 
 testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oFD")
 
-organization := "com.github.seanparsons"
+organization := "com.github.seanparsons.jsonar"
 
 name := "jsonar"
+
+version := "0.8.0"

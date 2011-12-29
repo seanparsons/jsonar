@@ -1,10 +1,11 @@
-package com.github.seanparsons.jsonar
+package com.github.seanparsons
 
+import jsonar.Parser.ParserError
 import scalaz._
 import Scalaz._
-import com.github.seanparsons.jsonar.Parser.ParserError
+import collection.generic.CanBuildFrom
 
-object Implicits {
+package object jsonar {
   implicit def intToJSONInt(int: Int): JSONInt = JSONInt(int)
   implicit def longToJSONInt(long: Long): JSONInt = JSONInt(long)
   implicit def bigIntToJSONInt(bigInt: BigInt): JSONInt = JSONInt(bigInt)
@@ -16,4 +17,12 @@ object Implicits {
   implicit def seqToJSONArray(seq: Seq[JSONValue]): JSONArray = JSONArray(seq)
   implicit val jsonValueEqual: Equal[JSONValue] = equalA
   implicit val jsonValidationEqual: Equal[ValidationNEL[ParserError, JSONValue]] = equalA
+  implicit val jsonArrayCanBuildFrom = new CanBuildFrom[TraversableOnce[JSONValue], JSONValue, JSONArray] {
+    def apply(from: TraversableOnce[JSONValue]) = apply()
+    def apply() = new JSONArrayBuilder()
+  }
+  implicit val jsonObjectCanBuildFrom = new CanBuildFrom[TraversableOnce[(JSONString, JSONValue)], (JSONString, JSONValue), JSONObject] {
+    def apply(from: TraversableOnce[(JSONString, JSONValue)]) = apply()
+    def apply() = new JSONObjectBuilder()
+  }
 }

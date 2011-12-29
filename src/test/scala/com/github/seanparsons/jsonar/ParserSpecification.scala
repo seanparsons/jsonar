@@ -6,7 +6,6 @@ import org.scalatest.prop.Checkers
 import org.scalacheck.Prop._
 import scalaz._
 import Scalaz._
-import com.github.seanparsons.jsonar.Implicits._
 
 case class ParserSpecification() extends FeatureSpec
                                  with MustMatchers
