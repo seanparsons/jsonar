@@ -17,16 +17,12 @@ To include it in your SBT project add the following to the definition
     
     libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.0"
 
-The first thing you'll want to do is import the bulk of the classes:
+The first thing you'll want to do is import the core of jsonar:
 
 ```scala
 import com.github.seanparsons.jsonar._
 ```
-Optionally also import the contents of the Implicits object for some convenience implicit conversions:
-
-```scala
-import com.github.seanparsons.jsonar.Implicits._
-```
+This includes all the necessary implicits and classes for convenience.
     
 To parse some JSON use the Parser object:
 
