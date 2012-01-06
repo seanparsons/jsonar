@@ -13,5 +13,4 @@ import JSONGenerators._
 case class JSONArraySpecification() extends FeatureSpec
                                     with MustMatchers
                                     with Checkers {
-
 }

@@ -46,7 +46,7 @@ object Printer {
   }
   def appendJSONValue(stringBuilder: StringBuilder, jsonValue: JSONValue) {
     jsonValue match {
-      case JSONNull => appendJSONNull(stringBuilder) 
+      case jsonNull: JSONNull => appendJSONNull(stringBuilder)
       case jsonString: JSONString => appendJSONString(stringBuilder, jsonString)
       case jsonDecimal: JSONDecimal => appendJSONDecimal(stringBuilder, jsonDecimal)
       case jsonInt: JSONInt => appendJSONInt(stringBuilder, jsonInt)

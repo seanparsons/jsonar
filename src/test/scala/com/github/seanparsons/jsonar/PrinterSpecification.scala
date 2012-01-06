@@ -9,7 +9,7 @@ case class PrinterSpecification() extends FeatureSpec
                                   with MustMatchers
                                   with Checkers {
   feature("print") {
-    ValidResults.resultPairings.foreach{resultPairing =>
+    KnownResults.validResultPairings.foreach{resultPairing =>
       scenario("For the JSON %s, the printed text is correct".format(resultPairing.jValue)) {
         Printer.print(resultPairing.jValue) must equal(resultPairing.json)
       }
