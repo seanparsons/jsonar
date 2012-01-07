@@ -27,7 +27,8 @@ This includes all the necessary implicits and classes for convenience.
 To parse some JSON use the Parser object:
 
 ```scala
-val parseResult: ValidationNel[Parser.ParserError, JSONValue] = Parser.parse("[10]")
+val parseResult: ValidationNEL[String, JSONValue] = Parser.parse("[10]")
+// scala> parseResult: ValidationNEL[String, JSONValue] = Success(JSONArray(Vector(JSONInt(10))))
 ```
 JSONAR uses [Scalaz](http://code.google.com/p/scalaz/) for the ValidationNel type which is effectively a pimped version of the Either class.
 
@@ -35,7 +36,11 @@ To produce JSON from an instance of JSONValue use the Printer object:
 
 ```scala
 val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("value")))
+// scala> json: String = {"key":"value"}
 ```
+
+A XPath-like API is available which lends itself to for comprehensions very nicely:
+
     
 ## Design.
 

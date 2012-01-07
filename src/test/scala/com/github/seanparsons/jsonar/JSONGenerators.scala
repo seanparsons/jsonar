@@ -1,10 +1,12 @@
 package com.github.seanparsons.jsonar
 
 import org.scalacheck.Gen._
-import org.scalacheck.Prop._
+import org.scalacheck.Prop
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
+import scalaz._
+import Scalaz._
 
 object JSONGenerators {
   def codePointStream(string: String): Stream[Int] = {
@@ -25,9 +27,9 @@ object JSONGenerators {
   val intGenerator: Gen[StringBuilder] = arbitrary[Long].map(long => new StringBuilder().append(long))
   val jsonIntGenerator: Gen[JSONInt] = arbitrary[Long].map(long => JSONInt(long))
   val doubleGenerator: Gen[StringBuilder] = arbitrary[Double].map(double => new StringBuilder().append(double))
-  val jsonDoubleGenerator: Gen[JSONDecimal] = arbitrary[Double].map(double => JSONDecimal(double))
+  val jsonDecimalGenerator: Gen[JSONDecimal] = arbitrary[Double].map(double => JSONDecimal(double))
   val numberGenerator: Gen[StringBuilder] = oneOf(intGenerator, doubleGenerator)
-  val jsonNumberGenerator: Gen[JSONNumber] = oneOf(jsonIntGenerator, jsonDoubleGenerator)
+  val jsonNumberGenerator: Gen[JSONNumber] = oneOf(jsonIntGenerator, jsonDecimalGenerator)
   val stringGenerator: Gen[StringBuilder] = arbitrary[String].map{string =>
     val codePoints = codePointStream(string).filter(isValidUnicodeCodePoint)
     val builder = codePoints.foldLeft(new java.lang.StringBuilder().append('"')){(builder, codePoint) =>
@@ -43,7 +45,7 @@ object JSONGenerators {
   val booleanGenerator: Gen[StringBuilder] = arbitrary[Boolean].map(boolean => new StringBuilder().append(if (boolean) "true" else "false"))
   val jsonBoolGenerator: Gen[JSONBool] = oneOf(JSONBoolTrue, JSONBoolFalse)
   val nothingGenerator: Gen[StringBuilder] = value(new StringBuilder().append("null"))
-  val jsonNothingGenerator: Gen[JSONValue] = value(JSONNull)
+  val jsonNothingGenerator: Gen[JSONNull] = value(JSONNull)
   def arrayGenerator(depth: Int = 5): Gen[StringBuilder] = listOfN(5, valueGenerator(depth - 1)).map{values => 
     val builder = new StringBuilder()
     builder.append('[')

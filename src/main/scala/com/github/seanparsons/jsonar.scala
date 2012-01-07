@@ -32,18 +32,22 @@ package object jsonar {
   implicit val jsonStringSemigroup: Semigroup[JSONString] = semigroup((a, b) => JSONString(a.value |+| b.value))
   implicit val jsonBoolSemigroup: Semigroup[JSONBool] = semigroup((a, b) => if (a.value |+| b.value) JSONBoolTrue else JSONBoolFalse)
   implicit val jsonArraySemigroup: Semigroup[JSONArray] = semigroup((a, b) => JSONArray(a.elements |+| b.elements))
-  private[this] def safeCast[T](instance: Any)(implicit targetManifest: Manifest[T]): Option[T] = {
-    if (manifest.erasure.isInstance(instance)) {
-      instance.asInstanceOf[T].some
+  private[this] def safeCast[T](instance: Any)(implicit targetManifest: Manifest[T]): Validation[String, T] = {
+    if (targetManifest.erasure.isInstance(instance)) {
+      instance.asInstanceOf[T].success
     } else {
-      none[T]
+      "Cannot convert %s to %s.".format(instance, targetManifest.erasure.getSimpleName).fail
     }
   }
-  implicit def jsonValueToRichJSONValue(jsonValue: JSONValue): RichJSONValue = new RichJSONValue {
-    def \(elementName: String) = jsonValue match {
+  protected[this] def subElementSearch(jsonValue: JSONValue, elementName: String): Validation[String, JSONValue] = {
+    val searchResult = jsonValue match {
       case jsonObject: JSONObject => jsonObject.fields.get(elementName)
       case _ => none[JSONValue]
     }
+    searchResult.map(_.success).getOrElse("Could not find subelement \"%s\" in %s.".format(elementName, jsonValue).fail)
+  }
+  implicit def jsonValueToRichJSONValue(jsonValue: JSONValue): RichJSONValue = new RichJSONValue {
+    def \(elementName: String) = subElementSearch(jsonValue, elementName)
     def asJSONString = safeCast[JSONString](jsonValue)
     def asJSONInt = safeCast[JSONInt](jsonValue)
     def asJSONDecimal = safeCast[JSONDecimal](jsonValue)
@@ -52,20 +56,17 @@ package object jsonar {
     def asJSONArray = safeCast[JSONArray](jsonValue)
     def asJSONObject = safeCast[JSONObject](jsonValue)
   }
-  private[this] case object NeverMatchRichJSONValue extends RichJSONValue {
-    def \(elementName: String) = none
-    def asJSONString = none
-    def asJSONInt = none
-    def asJSONDecimal = none
-    def asJSONBool = none
-    def asJSONNull = none
-    def asJSONArray = none
-    def asJSONObject = none
-  }
-  implicit def optionJSONValueToRichJSONValue(optionJSONValue: Option[JSONValue]): RichJSONValue = {
-    optionJSONValue match {
-      case Some(jsonValue) => jsonValueToRichJSONValue(jsonValue)
-      case _ => NeverMatchRichJSONValue
+  implicit def validationJSONValueToRichJSONValue[T](validationJSONValue: Validation[T, JSONValue])(implicit show: Show[T]): RichJSONValue = new RichJSONValue {
+    private[this] def foldJSONValidation[U <: JSONValue](successFold: (JSONValue) => Validation[String, U])(implicit valueManifest: Manifest[U]): Validation[String, U] = {
+      validationJSONValue.fold(_.shows.fail, successFold)
     }
+    def \(elementName: String) = foldJSONValidation[JSONValue](subElementSearch(_, elementName))
+    def asJSONString = foldJSONValidation[JSONString](safeCast)
+    def asJSONInt = foldJSONValidation[JSONInt](safeCast)
+    def asJSONDecimal = foldJSONValidation[JSONDecimal](safeCast)
+    def asJSONBool = foldJSONValidation[JSONBool](safeCast)
+    def asJSONNull = foldJSONValidation[JSONNull](safeCast)
+    def asJSONArray = foldJSONValidation[JSONArray](safeCast)
+    def asJSONObject = foldJSONValidation[JSONObject](safeCast)
   }
 }

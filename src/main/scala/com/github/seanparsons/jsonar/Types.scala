@@ -44,17 +44,22 @@ object JSONObject {
 }
 case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Traversable[JSONValue] with PartialFunction[Int, JSONValue] {
   def isDefinedAt(key: Int) = elements.isDefinedAt(key)
+  def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
   override def apply(key: Int) = elements(key)
   def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
   override def toString() = "JSONArray(%s)".format(elements)
 }
+object JSONArray {
+  def apply(first: JSONValue, rest: JSONValue*): JSONArray = new JSONArray(first +: rest)
+}
 trait RichJSONValue {
-  def \(elementName: String): Option[JSONValue]
-  def asJSONNull: Option[JSONNull]
-  def asJSONString: Option[JSONString]
-  def asJSONInt: Option[JSONInt]
-  def asJSONDecimal: Option[JSONDecimal]
-  def asJSONBool: Option[JSONBool]
-  def asJSONObject: Option[JSONObject]
-  def asJSONArray: Option[JSONArray]
+  def \(elementName: String): Validation[String, JSONValue]
+  def findSubElement(elementName: String): Validation[String, JSONValue] = \(elementName)
+  def asJSONNull: Validation[String, JSONNull]
+  def asJSONString: Validation[String, JSONString]
+  def asJSONInt: Validation[String, JSONInt]
+  def asJSONDecimal: Validation[String, JSONDecimal]
+  def asJSONBool: Validation[String, JSONBool]
+  def asJSONObject: Validation[String, JSONObject]
+  def asJSONArray: Validation[String, JSONArray]
 }
