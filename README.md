@@ -15,7 +15,7 @@ To include it in your SBT project add the following to the definition
 
     resolvers += "JSONAR repo" at "https://github.com/seanparsons/jsonar-repo/raw/master/releases/"
     
-    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.0"
+    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.2"
 
 The first thing you'll want to do is import the core of jsonar:
 
@@ -40,7 +40,31 @@ val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("val
 ```
 
 A XPath-like API is available which lends itself to for comprehensions very nicely:
+```scala
+val json = """
+{
+  "users":
+  {
+    "1":"Martin",
+    "2":"Rich",
+    "3":"James"
+  },
+  "friends":
+  {
+    "1":[2,3],
+    "2":[1,3],
+    "3":[1]
+  }
+}
+"""
 
+val friendsOfUser = for {
+parsed <- Parser.parse(json)
+user <- (parsed \ "users" \ "1").asJSONString
+friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
+friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
+} yield (user.value, friendIDs)
+```
     
 ## Design.
 

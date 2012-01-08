@@ -47,6 +47,7 @@ case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Tr
   def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
   override def apply(key: Int) = elements(key)
   def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
+  def collectElements[T](partialFunction: PartialFunction[JSONValue, T]): Validation[String, Seq[T]] = elements.collect(partialFunction).success[String]
   override def toString() = "JSONArray(%s)".format(elements)
 }
 object JSONArray {

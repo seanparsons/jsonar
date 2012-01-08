@@ -29,27 +29,26 @@ case class ReadmeExampleSpecification() extends FeatureSpec
         {
           "users":
           {
-            "1":"Martin"
-            "2":"Rich"
+            "1":"Martin",
+            "2":"Rich",
             "3":"James"
-          }
+          },
           "friends":
           {
-            "1":["2","3"]
-            "2":["1","3"]
-            "3":["1"]
+            "1":[2,3],
+            "2":[1,3],
+            "3":[1]
           }
         }
       """
 
-      val friendsOfUserLongVersion = for {
+      val friendsOfUser = for {
         parsed <- Parser.parse(json)
-        users <- parsed \ "users"
-        friends <- parsed \ "friends"
-        user <- (users \ "1").asJSONString
-        friendIDs <- (friends \ "1").asJSONArray
-      } yield (user, friendIDs)
-      friendsOfUserLongVersion
+        user <- (parsed \ "users" \ "1").asJSONString
+        friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
+        friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
+      } yield (user.value, friendIDs)
+      friendsOfUser must equal(Success(("Martin", Vector(2,3))))
     }
   }
 }
