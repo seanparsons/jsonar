@@ -40,6 +40,8 @@ val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("val
 ```
 
 A XPath-like API is available which lends itself to for comprehensions very nicely:
+
+
 ```scala
 val json = """
 {
@@ -59,10 +61,10 @@ val json = """
 """
 
 val friendsOfUser = for {
-parsed <- Parser.parse(json)
-user <- (parsed \ "users" \ "1").asJSONString
-friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
-friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
+  parsed <- Parser.parse(json)
+  user <- (parsed \ "users" \ "1").asJSONString
+  friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
+  friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
 } yield (user.value, friendIDs)
 ```
     
