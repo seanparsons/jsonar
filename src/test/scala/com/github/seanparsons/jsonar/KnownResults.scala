@@ -28,7 +28,8 @@ object KnownResults {
     ResultPairing(""""\r"""", JSONString("\r")),
     ResultPairing(""""\\"""", JSONString("\\")),
     ResultPairing(""""\/"""", JSONString("/")),
-    ResultPairing(""""\""""", JSONString("\""))
+    ResultPairing(""""\""""", JSONString("\"")),
+    ResultPairing("158699798998941697", JSONInt(BigInt(158699798998941697l)))
   )
   val parseFailures: Seq[ExpectedParseResult] = Seq(
     ExpectedParseResult("""[][]""", "JSON contains invalid suffix content: []".failNel),

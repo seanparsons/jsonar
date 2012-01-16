@@ -125,7 +125,7 @@ object Parser {
           (stream.tail, if (numberText.toLowerCase.contains('e')) {
             JSONDecimal(BigDecimal(numberText))
           } else {
-            JSONInt(Integer.parseInt(numberText))
+            JSONInt(BigInt(numberText))
           }).successNel
         } catch {
           case throwable => throwable.getMessage.failNel
