@@ -13,7 +13,7 @@ To include it in your SBT project add the following to the definition
 
     resolvers += "JSONAR repo" at "https://github.com/seanparsons/jsonar-repo/raw/master/releases/"
     
-    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.2"
+    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.3"
 
 The first thing you'll want to do is import the core of jsonar, which will include everything you need including lots of convenience implicits:
 
