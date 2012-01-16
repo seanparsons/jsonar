@@ -8,6 +8,7 @@ object JSONEscaping {
       char match {
         case '"'  => """\""""
         case '\\' => """\\"""
+        case '/' => """\/"""
         case '\b' => """\b"""
         case '\f' => """\f"""
         case '\n' => """\n"""

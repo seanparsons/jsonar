@@ -20,7 +20,15 @@ object KnownResults {
     ResultPairing("""[[[]]]""", JSONArray(Seq(JSONArray(Seq(JSONArray()))))),
     ResultPairing("""[[],[]]""", JSONArray(Seq(JSONArray(), JSONArray()))),
     ResultPairing("""[{},{}]""", JSONArray(Seq(JSONObject(), JSONObject()))),
-    ResultPairing("""[[{}],[{}]]""", JSONArray(Seq(JSONArray(Seq(JSONObject())), JSONArray(Seq(JSONObject())))))
+    ResultPairing("""[[{}],[{}]]""", JSONArray(Seq(JSONArray(Seq(JSONObject())), JSONArray(Seq(JSONObject()))))),
+    ResultPairing(""""\t"""", JSONString("\t")),
+    ResultPairing(""""\b"""", JSONString("\b")),
+    ResultPairing(""""\f"""", JSONString("\f")),
+    ResultPairing(""""\n"""", JSONString("\n")),
+    ResultPairing(""""\r"""", JSONString("\r")),
+    ResultPairing(""""\\"""", JSONString("\\")),
+    ResultPairing(""""\/"""", JSONString("/")),
+    ResultPairing(""""\""""", JSONString("\""))
   )
   val parseFailures: Seq[ExpectedParseResult] = Seq(
     ExpectedParseResult("""[][]""", "JSON contains invalid suffix content: []".failNel),

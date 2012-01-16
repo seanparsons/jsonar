@@ -36,6 +36,9 @@ case class EscapedCharacterToken(originalStringContent: String) extends StringPa
     case "\\t" => "\t"
     case "\\b" => "\b"
     case "\\f" => "\f"
+    case """\\""" => """\"""
+    case """\/""" => """/"""
+    case "\\\"" => "\""
     case x => x.tail
   }
 }
@@ -46,7 +49,7 @@ case class UnexpectedContentToken(originalStringContent: String) extends JSONTok
 
 object Parser {
   val UnicodeCharRegex = """(\\u[a-fA-F0-9]{4})""".r
-  val EscapedCharRegex = """(\[\\/bfnrt"])""".r
+  val EscapedCharRegex = """(\\[\\/bfnrt"])""".r
   val NormalStringRegex = """([^\"[\x00-\x1F]\\]+)""".r
   val NumberRegex = """(-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)""".r
 

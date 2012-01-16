@@ -15,7 +15,7 @@ object JSONARBuild extends Build {
       testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oFD"),
       organization := "com.github.seanparsons.jsonar",
       name := "jsonar",
-      version := "0.8.2",
+      version := "0.8.3",
       initialCommands := """
         import com.github.seanparsons.jsonar._
         import scalaz._
