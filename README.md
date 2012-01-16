@@ -1,8 +1,6 @@
 # JSONAR
 
-JSONAR is a JSON library for Scala, offering the ability to parse text for JSON into an object graph and similarly turn an object graph into a String.
-
-JSONAR avoids pitfalls of some JSON libraries, like the inbuilt Scala implementation, by offering the following features:
+JSONAR is a JSON library for Scala, offering the ability to parse text for JSON into an object graph and similarly turn an object graph into a String. It avoids pitfalls of some JSON libraries, like the inbuilt Scala implementation, by offering the following features:
 
 * Parsing preserves the errors without throwing exceptions, making for simpler code as you just need to map or flatMap the result.
 * Rigidly typing the JSON objects avoiding types like Map[String, Any], to ensure a List couldn't be used as the key in a JSONObject.
@@ -17,12 +15,11 @@ To include it in your SBT project add the following to the definition
     
     libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.2"
 
-The first thing you'll want to do is import the core of jsonar:
+The first thing you'll want to do is import the core of jsonar, which will include everything you need including lots of convenience implicits:
 
 ```scala
 import com.github.seanparsons.jsonar._
 ```
-This includes all the necessary implicits and classes for convenience.
     
 To parse some JSON use the Parser object:
 
@@ -30,7 +27,6 @@ To parse some JSON use the Parser object:
 val parseResult: ValidationNEL[String, JSONValue] = Parser.parse("[10]")
 // scala> parseResult: ValidationNEL[String, JSONValue] = Success(JSONArray(Vector(JSONInt(10))))
 ```
-JSONAR uses [Scalaz](http://code.google.com/p/scalaz/) for the ValidationNel type which is effectively a pimped version of the Either class.
 
 To produce JSON from an instance of JSONValue use the Printer object:
 
@@ -40,6 +36,7 @@ val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("val
 ```
 
 A XPath-like API is available which lends itself to for comprehensions very nicely:
+
 ```scala
 val json = """
 {
@@ -59,18 +56,15 @@ val json = """
 """
 
 val friendsOfUser = for {
-parsed <- Parser.parse(json)
-user <- (parsed \ "users" \ "1").asJSONString
-friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
-friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
+  parsed <- Parser.parse(json)
+  user <- (parsed \ "users" \ "1").asJSONString
+  friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
+  friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
 } yield (user.value, friendIDs)
 ```
     
 ## Design.
 
-JSONAR attempts to be as tightly typed as possible, even to the point of providing two specific objects for the two values of a boolean:
-
-    scala> println(JSONBoolTrue.value)
-    true
+JSONAR uses [Scalaz](http://code.google.com/p/scalaz/) for the ValidationNel type which is effectively a pimped version of the Either class.
 
 The core is all inside the [Types.scala](https://github.com/seanparsons/jsonar/blob/master/src/main/scala/com/github/seanparsons/jsonar/Types.scala) file which is well worth skimming over quickly.
