@@ -1,0 +1,19 @@
+
+{
+ "organization":"com.github.seanparsons.jsonar",
+ "name":"jsonar",
+ "version":"0.9.0",
+ "description":"jsonar",
+ "site":"",
+ "tags":[],
+ "docs":"",
+ "licenses": [],
+ "resolvers": ["http://scala-tools.org/repo-releases"],
+ "dependencies": [{
+   "organization":"org.scalaz",
+   "name": "scalaz-core",
+   "version": "6.0.4"
+  }],
+ "scalas": ["2.9.0-1","2.9.1","2.10.0-M1"],
+ "sbt": false
+}
