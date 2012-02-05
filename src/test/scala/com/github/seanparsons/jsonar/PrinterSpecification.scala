@@ -1,18 +1,12 @@
 package com.github.seanparsons.jsonar
 
-import org.scalatest.FeatureSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.prop.Checkers
+import org.specs2._
+import org.specs2.specification._
+import org.specs2.matcher._
 
-
-case class PrinterSpecification() extends FeatureSpec
-                                  with MustMatchers
-                                  with Checkers {
-  feature("print") {
-    KnownResults.validResultPairings.foreach{resultPairing =>
-      scenario("For the JSON %s, the printed text is correct".format(resultPairing.jValue)) {
-        Printer.print(resultPairing.jValue) must equal(resultPairing.json)
-      }
-    }
+case class PrinterSpecification() extends Specification with DataTables with ScalaCheck {
+  def printSpec = KnownResults.validResultPairings |> {(json, jsonValue) =>
+    Printer.print(jsonValue) must_== json
   }
+  def is = "print" ^ "valid results" ! printSpec 
 }

@@ -1,19 +1,16 @@
 package com.github.seanparsons.jsonar
 
-import org.scalatest.FeatureSpec
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.prop.Checkers
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop
 import org.scalacheck.Prop._
 import com.github.seanparsons.jsonar.JSONEscaping._
+import org.specs2._
+import org.specs2.specification._
 
-case class JSONEscapingSpecification () extends FeatureSpec
-                                        with MustMatchers
-                                        with Checkers {
-  feature("Quoting") {
-    scenario("Quoting and unquoting a string") {
-      check(forAll(arbitrary[String]){text =>
+case class JSONEscapingSpecification() extends Specification with ScalaCheck {
+  def is = "Quoting" ^ 
+    "Quoting and unquoting a string" !
+      forAll(arbitrary[String]){text =>
         val quotedText = quote(text)
         ("quotedText = " + quotedText) |: {
           val unquotedText = unquote(quotedText)
@@ -21,7 +18,5 @@ case class JSONEscapingSpecification () extends FeatureSpec
             text == unquotedText
           }
         }
-      })
-    }
-  }
+      }
 }

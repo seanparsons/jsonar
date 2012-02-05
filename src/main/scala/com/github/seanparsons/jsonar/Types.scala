@@ -47,20 +47,20 @@ case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Tr
   def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
   override def apply(key: Int) = elements(key)
   def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
-  def collectElements[T](partialFunction: PartialFunction[JSONValue, T]): Validation[String, Seq[T]] = elements.collect(partialFunction).success[String]
+  def collectElements[T](partialFunction: PartialFunction[JSONValue, T]): ValidationNEL[String, Seq[T]] = elements.collect(partialFunction).successNel[String]
   override def toString() = "JSONArray(%s)".format(elements)
 }
 object JSONArray {
   def apply(first: JSONValue, rest: JSONValue*): JSONArray = new JSONArray(first +: rest)
 }
 trait RichJSONValue {
-  def \(elementName: String): Validation[String, JSONValue]
-  def findSubElement(elementName: String): Validation[String, JSONValue] = \(elementName)
-  def asJSONNull: Validation[String, JSONNull]
-  def asJSONString: Validation[String, JSONString]
-  def asJSONInt: Validation[String, JSONInt]
-  def asJSONDecimal: Validation[String, JSONDecimal]
-  def asJSONBool: Validation[String, JSONBool]
-  def asJSONObject: Validation[String, JSONObject]
-  def asJSONArray: Validation[String, JSONArray]
+  def \(elementName: String): ValidationNEL[String, JSONValue]
+  def findSubElement(elementName: String): ValidationNEL[String, JSONValue] = \(elementName)
+  def asJSONNull: ValidationNEL[String, JSONNull]
+  def asJSONString: ValidationNEL[String, JSONString]
+  def asJSONInt: ValidationNEL[String, JSONInt]
+  def asJSONDecimal: ValidationNEL[String, JSONDecimal]
+  def asJSONBool: ValidationNEL[String, JSONBool]
+  def asJSONObject: ValidationNEL[String, JSONObject]
+  def asJSONArray: ValidationNEL[String, JSONArray]
 }

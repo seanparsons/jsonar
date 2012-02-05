@@ -1,8 +1,5 @@
 package com.github.seanparsons.jsonar
 
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.prop.Checkers
-import org.scalatest.{ScalaTestScalazSupport, FeatureSpec}
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 import org.scalacheck.Arbitrary._
@@ -10,21 +7,20 @@ import scalaz._
 import Scalaz._
 import JSONGenerators._
 import org.scalacheck.{Prop, Gen}
+import org.specs2._
+import org.specs2.specification._
 
-case class ReadmeExampleSpecification() extends FeatureSpec
-                                        with MustMatchers
-                                        with Checkers
-                                        with ScalaTestScalazSupport {
-  feature("Readme") {
-    scenario("Printer.print") {
+case class ReadmeExampleSpecification() extends Specification with ScalaCheck {
+  def is = "Readme" ^
+    "Printer.print" ! {
       val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("value")))
-      json must equal("""{"key":"value"}""")
+      json ≟ """{"key":"value"}"""
     }
-    scenario("Parser.parse") {
+    "Parser.parse" ! {
       val parseResult: ValidationNEL[String, JSONValue] = Parser.parse("[10]")
-      parseResult must equal(Success(JSONArray(JSONInt(10))))
+      parseResult ≟ Success(JSONArray(JSONInt(10)))
     }
-    scenario("For comprehensions example") {
+    "For comprehensions example" ! {
       val json = """
         {
           "users":
@@ -48,7 +44,6 @@ case class ReadmeExampleSpecification() extends FeatureSpec
         friendIDArray <- (parsed \ "friends" \ "1").asJSONArray
         friendIDs <- friendIDArray.collectElements{case JSONInt(value) => value}
       } yield (user.value, friendIDs)
-      friendsOfUser must equal(Success(("Martin", Vector(2,3))))
+      friendsOfUser ≟ ("Martin", Vector(BigInt(2), BigInt(3))).successNel[String]
     }
-  }
 }
