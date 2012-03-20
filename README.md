@@ -11,9 +11,9 @@ JSONAR is a JSON library for Scala, offering the ability to parse text for JSON 
 
 To include it in your SBT project add the following to the definition
 
-    resolvers += "JSONAR repo" at "https://github.com/seanparsons/jsonar-repo/raw/master/releases/"
+    resolvers += "Sonatype Repo" at "https://oss.sonatype.org/content/repositories/releases/"
     
-    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.8.3"
+    libraryDependencies += "com.github.seanparsons.jsonar" %% "jsonar" % "0.9.1"
 
 The first thing you'll want to do is import the core of jsonar, which will include everything you need including lots of convenience implicits:
 
