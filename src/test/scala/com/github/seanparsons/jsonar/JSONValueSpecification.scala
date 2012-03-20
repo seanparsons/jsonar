@@ -31,7 +31,7 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     "Any JSONValue that isn't a JSONObject returns None" !
       forAll(nonJSONObjectGenerator, arbitrary[String]){(jsonValue, key) =>
         val lookupResult = jsonValue \ key
-        ("lookupResult = " + lookupResult) |: lookupResult ≟ "Could not find subelement \"%s\" in %s.".format(key, jsonValue).failNel
+        ("lookupResult = " + lookupResult) |: lookupResult ≟ SubElementNotFoundJSONError(jsonValue, key).failNel
       } ^
     "Any JSONObject with a single key present in the fields" !
       forAll(jsonStringGenerator, Gen.oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator)){(key, value) =>
@@ -39,10 +39,10 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
         jsonObject \ key.value ≟ value.success
       } ^
     "For comprehension drilling down" ! {
-      val userMap: JSONObject = Map("1" -> "Sean", "2" -> "Ricky")
-      val orderMap: JSONObject = Map("1" -> Seq("Item 1", "Item 2"), "2" -> Seq("Item 2", "Item 3"))
-      val jsonObject: JSONObject = Map("users" -> userMap, "orders" -> orderMap)
-      val expectedResult: Validation[String, (JSONString, JSONArray)] = (JSONString("Sean"), Seq("Item 1", "Item 2"): JSONArray).success[String]
+      val userMap: JSONObject = JSONObject(Map(JSONString("1") -> JSONString("Sean"), JSONString("2") -> JSONString("Ricky")))
+      val orderMap: JSONObject = JSONObject(Map(JSONString("1") -> JSONArray(JSONString("Item 1"), JSONString("Item 2")), JSONString("2") -> JSONArray(JSONString("Item 2"), JSONString("Item 3"))))
+      val jsonObject: JSONObject = JSONObject(Map(JSONString("users") -> userMap, JSONString("orders") -> orderMap))
+      val expectedResult: Validation[String, (JSONString, JSONArray)] = (JSONString("Sean"), JSONArray(JSONString("Item 1"), JSONString("Item 2"))).success[String]
       val nameAndOrders = for {
         username <- (jsonObject \ "users" \ "1").asJSONString
         userOrders <- (jsonObject \ "orders" \ "1").asJSONArray

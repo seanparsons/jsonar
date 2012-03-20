@@ -30,13 +30,13 @@ object KnownResults extends DataTables {
     
   def parseFailures = 
     "JSON"                                            | "parse result"                                                                                                        |
-    """[][]"""                                        ! "JSON contains invalid suffix content: []".failNel[JSONValue]                                                         |
-    """{}{}"""                                        ! "JSON contains invalid suffix content: {}".failNel[JSONValue]                                                         |
-    "\"\"\"\""                                        ! "JSON contains invalid suffix content: \"\"".failNel[JSONValue]                                                       |
-    "\"test"                                          ! "Expected string bounds but found: ".failNel[JSONValue]                                                               |
-    "[7,,]"                                           ! "Unexpected content found: ,]".failNel[JSONValue]                                                                     |
-    """{"firstKey":100,"secondKey":}"""               ! "Unexpected content found: }".failNel[JSONValue]                                                                      |
-    """{"firstKey":}"""                               ! "Unexpected content found: }".failNel[JSONValue]                                                                      |
-    """{"firstKey"}"""                                ! "Expected field separator token but found: }".failNel[JSONValue]                                                      |
-    """[[}]"""                                        ! "Unexpected content found: }]".failNel[JSONValue]
+    """[][]"""                                        ! JSONParseError("JSON contains invalid suffix content: []").failNel[JSONValue]                                         |
+    """{}{}"""                                        ! JSONParseError("JSON contains invalid suffix content: {}").failNel[JSONValue]                                         |
+    "\"\"\"\""                                        ! JSONParseError("JSON contains invalid suffix content: \"\"").failNel[JSONValue]                                       |
+    "\"test"                                          ! JSONParseError("Expected string bounds but found: ").failNel[JSONValue]                                               |
+    "[7,,]"                                           ! JSONParseError("Unexpected content found: ,]").failNel[JSONValue]                                                     |
+    """{"firstKey":100,"secondKey":}"""               ! JSONParseError("Unexpected content found: }").failNel[JSONValue]                                                      |
+    """{"firstKey":}"""                               ! JSONParseError("Unexpected content found: }").failNel[JSONValue]                                                      |
+    """{"firstKey"}"""                                ! JSONParseError("Expected field separator token but found: }").failNel[JSONValue]                                      |
+    """[[}]"""                                        ! JSONParseError("Unexpected content found: }]").failNel[JSONValue]
 }

@@ -13,7 +13,7 @@ import Scalaz._
 case class ParserSpecification() extends Specification with DataTables with ScalaCheck {
   def validResultsSpec = KnownResults.validResultPairings |> {(json, expectedJSONValue) =>
     val actualParseResult = Parser.parse(json)
-    actualParseResult must_== Success[String, JSONValue](expectedJSONValue).liftFailNel
+    actualParseResult must_== expectedJSONValue.successNel[JSONParseError]
   }
   def invalidResultsSpec = KnownResults.parseFailures |> {(json, parseResult) =>
     val actualParseResult = Parser.parse(json)

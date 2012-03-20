@@ -16,41 +16,48 @@ case class JSONIntSpecification() extends Specification with ScalaCheck {
     "intValue" ^
       "Any value between Int.MinValue and Int.MaxValue" ! 
       	forAllNoShrink(chooseNum(Int.MinValue, Int.MaxValue)){int =>
-      	  val intValue = (new JSONInt(int)).intValue 
-      	  ("intValue = " + intValue) |: intValue ≟ int.some
+      	  val intValue = (new JSONInt(int)).asInt() 
+      	  ("intValue = " + intValue) |: intValue ≟ int.successNel[JSONError]
     	  }	^	
       "Positive value greater than Int.MaxValue" !
       	forAllNoShrink(chooseNum(Int.MaxValue.toLong + 1L, Long.MaxValue)){long =>
-          val intValue = (new JSONInt(long)).intValue
-          ("intValue = " + intValue) |: intValue ≟ None
+      	  val jsonValue = new JSONInt(long)
+          val intValue = jsonValue.asInt()
+          ("intValue = " + intValue) |: intValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Int]]).failNel[Int]
         } ^
       "Negative value less than Int.MinValue" !
         forAllNoShrink(chooseNum(Long.MinValue, Int.MinValue.toLong - 1L)){long =>
-          val intValue = (new JSONInt(long)).intValue
-          ("intValue = " + intValue) |: intValue ≟ None
+          val jsonValue = new JSONInt(long)
+          val intValue = jsonValue.asInt()
+          ("intValue = " + intValue) |: intValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Int]]).failNel[Int]
         } ^
       "Negative value less than Long.MinValue" ! {
-        val intValue = (new JSONInt(TestValues.lowBigInt)).intValue
-        ("intValue = " + intValue) |: intValue ≟ None
+        val jsonValue = new JSONInt(TestValues.lowBigInt)
+        val intValue = jsonValue.asInt()
+        ("intValue = " + intValue) |: intValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Int]]).failNel[Int]
       } ^
       "Negative value greater than Long.MaxValue" ! {
-        val intValue = (new JSONInt(TestValues.highBigInt)).intValue
-        ("intValue = " + intValue) |: intValue ≟ None
+        val jsonValue = new JSONInt(TestValues.highBigInt)
+        val intValue = jsonValue.asInt()
+        ("intValue = " + intValue) |: intValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Int]]).failNel[Int]
       } ^ end
   def longValueSpec = 
     "longValue" ^
       "Any value between Long.MinValue and Long.MaxValue" !
         forAllNoShrink(chooseNum(Long.MinValue, Long.MaxValue)){long =>
-          val longValue = (new JSONInt(long)).longValue
-          ("longValue = " + longValue) |: longValue ≟ long.some
+          val jsonValue = new JSONInt(long)
+          val longValue = jsonValue.asLong()
+          ("longValue = " + longValue) |: longValue ≟ long.successNel[JSONError]
         } ^
       "Negative value less than Long.MinValue" ! {
-        val longValue = (new JSONInt(TestValues.lowBigInt)).longValue
-        ("longValue = " + longValue) |: longValue ≟ None
+        val jsonValue = new JSONInt(TestValues.lowBigInt)
+        val longValue = jsonValue.asLong()
+        ("longValue = " + longValue) |: longValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Long]]).failNel[Long]
       } ^
       "Negative value greater than Long.MaxValue" ! {
-        val longValue = (new JSONInt(TestValues.highBigInt)).longValue
-        ("longValue = " + longValue) |: longValue ≟ None
+        val jsonValue = new JSONInt(TestValues.highBigInt)
+        val longValue = jsonValue.asLong()
+        ("longValue = " + longValue) |: longValue ≟ InvalidConversionJSONError(jsonValue, implicitly[Manifest[Long]]).failNel[Long]
       } ^ end
 
   def is = intValueSpec ^ longValueSpec
