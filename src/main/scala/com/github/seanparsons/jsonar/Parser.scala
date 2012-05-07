@@ -63,22 +63,22 @@ object Parser {
 
   private[this] def excerpt(tokens: Stream[JSONToken]): String = excerpt(tokens.map(_.originalStringContent).mkString)
 
-  def parse(json: String): ValidationNEL[JSONParseError, JSONValue] = {
+  def parse(json: String): ValidationNEL[JSONError, JSONValue] = {
     expectValue(tokenize(json)).flatMap{streamAndValue =>
       if (streamAndValue._1.isEmpty) {
         streamAndValue._2.successNel
       } else {
-        JSONParseError("JSON contains invalid suffix content: %s".format(excerpt(streamAndValue._1))).failNel
+        parseError("JSON contains invalid suffix content: %s".format(excerpt(streamAndValue._1))).failNel
       }
     }
   }
 
   def tokenize(json: String): Stream[JSONToken] = tokenize(PrecursorToken, json)
 
-  def expectedSpacerToken(stream: Stream[JSONToken], token: JSONToken, failMessage: String): ValidationNEL[JSONParseError, Stream[JSONToken]] = {
+  def expectedSpacerToken(stream: Stream[JSONToken], token: JSONToken, failMessage: String): ValidationNEL[JSONError, Stream[JSONToken]] = {
     stream match {
       case `token` #:: streamTail => streamTail.successNel
-      case _ => JSONParseError("%s but found: %s".format(failMessage, excerpt(stream))).failNel
+      case _ => parseError("%s but found: %s".format(failMessage, excerpt(stream))).failNel
     }
   }
   
@@ -98,21 +98,21 @@ object Parser {
 
   def expectFieldSeparator(stream: Stream[JSONToken]) = expectedSpacerToken(stream, FieldSeparatorToken, "Expected field separator token")
   
-  def expectObject(stream: Stream[JSONToken]): ValidationNEL[JSONParseError, (Stream[JSONToken], JSONObject)] = {
+  def expectObject(stream: Stream[JSONToken]): ValidationNEL[JSONError, (Stream[JSONToken], JSONObject)] = {
     for {
       afterObjectOpen <- expectObjectOpen(stream)
       streamAndFields <- expectObjectField(true, (afterObjectOpen, Vector[(JSONString, JSONValue)]()).successNel)
     } yield (streamAndFields._1, JSONObject(streamAndFields._2.toMap))
   }
   
-  def expectArray(stream: Stream[JSONToken]): ValidationNEL[JSONParseError, (Stream[JSONToken], JSONArray)] = {
+  def expectArray(stream: Stream[JSONToken]): ValidationNEL[JSONError, (Stream[JSONToken], JSONArray)] = {
     for {
       afterArrayOpen <- expectArrayOpen(stream)
       streamAndFields <- expectArrayField(true, (afterArrayOpen, Vector[JSONValue]()).successNel)
     } yield (streamAndFields._1, JSONArray(streamAndFields._2))
   }
 
-  def expectValue(stream: Stream[JSONToken]): ValidationNEL[JSONParseError, (Stream[JSONToken], JSONValue)] = {
+  def expectValue(stream: Stream[JSONToken]): ValidationNEL[JSONError, (Stream[JSONToken], JSONValue)] = {
     stream.headOption match {
       case Some(ArrayOpenToken) => expectArray(stream)
       case Some(ObjectOpenToken) => expectObject(stream)
@@ -128,23 +128,23 @@ object Parser {
             JSONInt(BigInt(numberText))
           }).successNel
         } catch {
-          case throwable => JSONParseError(throwable.getMessage).failNel
+          case throwable => parseError(throwable.getMessage).failNel
         }
       }
-      case Some(UnexpectedContentToken(excerpt)) => JSONParseError("Unexpected content found: %s".format(excerpt)).failNel
-      case Some(unexpectedToken) => JSONParseError("Unexpected content found: %s".format(excerpt(stream))).failNel
-      case None => JSONParseError("JSON terminates unexpectedly").failNel
+      case Some(UnexpectedContentToken(excerpt)) => parseError("Unexpected content found: %s".format(excerpt)).failNel
+      case Some(unexpectedToken) => parseError("Unexpected content found: %s".format(excerpt(stream))).failNel
+      case None => parseError("JSON terminates unexpectedly").failNel
     }
   }
 
-  @tailrec def expectArrayField(first: Boolean, currentStream: ValidationNEL[JSONParseError, (Stream[JSONToken], Seq[JSONValue])]): ValidationNEL[JSONParseError, (Stream[JSONToken], Seq[JSONValue])] = {
+  @tailrec def expectArrayField(first: Boolean, currentStream: ValidationNEL[JSONError, (Stream[JSONToken], Seq[JSONValue])]): ValidationNEL[JSONError, (Stream[JSONToken], Seq[JSONValue])] = {
     currentStream match {
       case Success((stream, fields)) => {
         stream.headOption match {
           case Some(ArrayCloseToken) => (stream.tail, fields).successNel
           case _ => {
             expectArrayField(false, for {
-              afterEntrySeparator <- if (first) stream.successNel else expectEntrySeparator(stream)
+              afterEntrySeparator <- if (first) stream.successNel[JSONError] else expectEntrySeparator(stream)
               streamAndValue <- expectValue(afterEntrySeparator)
             } yield (streamAndValue._1, fields :+ streamAndValue._2))
           }
@@ -154,14 +154,14 @@ object Parser {
     }
   }
   
-  @tailrec def expectObjectField(first: Boolean, currentStream: ValidationNEL[JSONParseError, (Stream[JSONToken], Seq[(JSONString, JSONValue)])]): ValidationNEL[JSONParseError, (Stream[JSONToken], Seq[(JSONString, JSONValue)])] = {
+  @tailrec def expectObjectField(first: Boolean, currentStream: ValidationNEL[JSONError, (Stream[JSONToken], Seq[(JSONString, JSONValue)])]): ValidationNEL[JSONError, (Stream[JSONToken], Seq[(JSONString, JSONValue)])] = {
     currentStream match {
       case Success((stream, fields)) => {
         stream.headOption match {
           case Some(ObjectCloseToken) => (stream.tail, fields).successNel
           case _ => {
             expectObjectField(false, for {
-              afterEntrySeparator <- if (first) stream.successNel else expectEntrySeparator(stream)
+              afterEntrySeparator <- if (first) stream.successNel[JSONError] else expectEntrySeparator(stream)
               streamAndKey <- expectString(afterEntrySeparator)
               afterFieldSeperator <- expectFieldSeparator(streamAndKey._1)
               streamAndValue <- expectValue(afterFieldSeperator)
@@ -173,10 +173,10 @@ object Parser {
     }
   }
 
-  def expectString(stream: Stream[JSONToken]): ValidationNEL[JSONParseError, (Stream[JSONToken], JSONString)] = {
+  def expectString(stream: Stream[JSONToken]): ValidationNEL[JSONError, (Stream[JSONToken], JSONString)] = {
     for {
       afterOpen <- expectStringOpen(stream)
-      elements <- afterOpen.span(jsonToken => jsonToken.isInstanceOf[StringPartToken]).successNel[JSONParseError]
+      elements <- afterOpen.span(jsonToken => jsonToken.isInstanceOf[StringPartToken]).successNel[JSONError]
       afterClose <- expectStringClose(elements._2)
     } yield (afterClose, JSONString(elements._1.collect{case stringPart: StringPartToken => stringPart.parsedStringContent}.mkString))
   }

@@ -14,6 +14,6 @@ case class JSONObjectSpecification() extends Specification with ScalaCheck {
       "Passing in a collection of fields" !
         forAll(jsonObjectFieldsGenerator()){fields =>
           val jsonObject = JSONObject(fields: _*)
-          ("jsonObject = " + jsonObject) |: jsonObject.fields ≟ fields.toMap
+          ("jsonObject = " + jsonObject) |: (jsonObject.fields === fields.toMap)
         }
 }

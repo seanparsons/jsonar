@@ -1,127 +1,49 @@
 package com.github.seanparsons
 
-import jsonar.{JSONObject, JSONBool}
 import scalaz._
 import Scalaz._
 
 package object jsonar {
-  implicit val jsonValueEqual: Equal[JSONValue] = equalA
-  implicit val jsonErrorEqual: Equal[JSONError] = equalA
-  implicit val jsonNullZero: Zero[JSONNull] = zero(JSONNull)
-  implicit val jsonIntZero: Zero[JSONInt] = zero(JSONInt(0))
-  implicit val jsonDecimalZero: Zero[JSONDecimal] = zero(JSONDecimal(0))
-  implicit val jsonStringZero: Zero[JSONString] = zero(JSONString(""))
-  implicit val jsonBoolZero: Zero[JSONBool] = zero(JSONBoolFalse)
-  implicit val jsonObjectZero: Zero[JSONObject] = zero(JSONObject())
-  implicit val jsonArrayZero: Zero[JSONArray] = zero(JSONArray())
-  implicit val jsonNullSemigroup: Semigroup[JSONNull] = semigroup((a, b) => JSONNull)
-  implicit val jsonIntSemigroup: Semigroup[JSONInt] = semigroup((a, b) => JSONInt(a.value |+| b.value))
-  implicit val jsonDecimalSemigroup: Semigroup[JSONDecimal] = semigroup((a, b) => JSONDecimal(a.value + b.value))
-  implicit val jsonStringSemigroup: Semigroup[JSONString] = semigroup((a, b) => JSONString(a.value |+| b.value))
-  implicit val jsonBoolSemigroup: Semigroup[JSONBool] = semigroup((a, b) => if (a.value |+| b.value) JSONBoolTrue else JSONBoolFalse)
-  implicit val jsonArraySemigroup: Semigroup[JSONArray] = semigroup((a, b) => JSONArray(a.elements |+| b.elements))
-  private[this] def safeCast[T <: JSONValue](instance: JSONValue)(implicit targetManifest: Manifest[T]): ValidationNEL[JSONError, T] = {
-    if (targetManifest.erasure.isInstance(instance)) {
-      instance.asInstanceOf[T].successNel
-    } else {
-      NotInstanceJSONError(instance, targetManifest).failNel
-    }
+  implicit val jsonValueEqual: Equal[JSONValue] = Equal.equalA[JSONValue]
+  implicit val jsonNullEqual: Equal[JSONNull] = Equal.equalA[JSONNull]
+  implicit val jsonIntEqual: Equal[JSONInt] = Equal.equalA[JSONInt]
+  implicit val jsonDecimalEqual: Equal[JSONDecimal] = Equal.equalA[JSONDecimal]
+  implicit val jsonStringEqual: Equal[JSONString] = Equal.equalA[JSONString]
+  implicit val jsonBoolEqual: Equal[JSONBool] = Equal.equalA[JSONBool]
+  implicit val jsonObjectEqual: Equal[JSONObject] = Equal.equalA[JSONObject]
+  implicit val jsonArrayEqual: Equal[JSONArray] = Equal.equalA[JSONArray]
+  implicit val jsonErrorEqual: Equal[JSONError] = Equal.equalA[JSONError]
+  implicit val jsonStringOrder: Order[JSONString] = Order.orderBy((jsonString: JSONString) => jsonString.value)
+  implicit val jsonNullMonoid: Monoid[JSONNull] = new Monoid[JSONNull] {
+    def append(first: JSONNull, second: => JSONNull) = JSONNull
+    val zero = JSONNull
   }
-  protected[this] def subElementSearch(jsonValue: JSONValue, elementName: String): ValidationNEL[JSONError, JSONValue] = {
-    val searchResult = jsonValue match {
-      case jsonObject: JSONObject => jsonObject.fields.get(JSONString(elementName))
-      case _ => none[JSONValue]
-    }
-    searchResult.map(_.successNel).getOrElse(SubElementNotFoundJSONError(jsonValue, elementName).failNel)
+  implicit val jsonIntMonoid: Monoid[JSONInt] = new Monoid[JSONInt] {
+    def append(first: JSONInt, second: => JSONInt) = JSONInt(first.value |+| second.value)
+    val zero = new JSONInt(0)
   }
-  implicit def jsonValueToRichJSONValue(jsonValue: JSONValue): RichJSONValue = new RichJSONValue {
-    def search(elementName: String) = subElementSearch(jsonValue, elementName)
-    def \(elementName: String) = subElementSearch(jsonValue, elementName)
-    def asJSONString = safeCast[JSONString](jsonValue)
-    def asJSONInt = safeCast[JSONInt](jsonValue)
-    def asJSONDecimal = safeCast[JSONDecimal](jsonValue)
-    def asJSONBool = safeCast[JSONBool](jsonValue)
-    def asJSONNull = safeCast[JSONNull](jsonValue)
-    def asJSONArray = safeCast[JSONArray](jsonValue)
-    def asJSONObject = safeCast[JSONObject](jsonValue)
+  implicit val jsonDecimalMonoid: Monoid[JSONDecimal] = new Monoid[JSONDecimal] {
+    def append(first: JSONDecimal, second: => JSONDecimal) = JSONDecimal(first.value |+| second.value)
+    val zero = new JSONDecimal(0)
   }
-  implicit def validationJSONValueToRichJSONValue(validationJSONValue: ValidationNEL[JSONError, JSONValue]): RichJSONValue = new RichJSONValue {
-    private[this] def foldJSONValidation[U <: JSONValue](successFold: (JSONValue) => ValidationNEL[JSONError, U])(implicit valueManifest: Manifest[U]): ValidationNEL[JSONError, U] = {
-      validationJSONValue.fold(_.fail, successFold)
-    }
-    def search(elementName: String) = foldJSONValidation[JSONValue](subElementSearch(_, elementName))
-    def \(elementName: String) = foldJSONValidation[JSONValue](subElementSearch(_, elementName))
-    def asJSONString = foldJSONValidation[JSONString](safeCast)
-    def asJSONInt = foldJSONValidation[JSONInt](safeCast)
-    def asJSONDecimal = foldJSONValidation[JSONDecimal](safeCast)
-    def asJSONBool = foldJSONValidation[JSONBool](safeCast)
-    def asJSONNull = foldJSONValidation[JSONNull](safeCast)
-    def asJSONArray = foldJSONValidation[JSONArray](safeCast)
-    def asJSONObject = foldJSONValidation[JSONObject](safeCast)
+  implicit val jsonStringMonoid: Monoid[JSONString] = new Monoid[JSONString] {
+    def append(first: JSONString, second: => JSONString) = JSONString(first.value |+| second.value)
+    val zero = new JSONString("")
   }
-  private[this] def jsonIntToLong(jsonInt: JSONInt): ValidationNEL[JSONError, Long] = {
-    if (jsonInt.value >= Long.MinValue && jsonInt.value <= Long.MaxValue) {
-      jsonInt.value.longValue().successNel
-    } else {
-      InvalidConversionJSONError(jsonInt, implicitly[Manifest[Long]]).failNel
-    }
+  implicit val jsonBoolMonoid: Monoid[JSONBool] = new Monoid[JSONBool] {
+    def append(first: JSONBool, second: => JSONBool) = if (first.value || second.value) JSONBoolTrue else JSONBoolFalse
+    val zero = JSONBoolFalse
   }
-  private[this] def jsonIntToInt(jsonInt: JSONInt): ValidationNEL[JSONError, Int] = {
-    if (jsonInt.value >= Int.MinValue && jsonInt.value <= Int.MaxValue) {
-      jsonInt.value.intValue().successNel
-    } else {
-      InvalidConversionJSONError(jsonInt, implicitly[Manifest[Int]]).failNel
-    }
+  implicit val jsonObjectMonoid: Monoid[JSONObject] = new Monoid[JSONObject] {
+    def append(first: JSONObject, second: => JSONObject) = JSONObject(first.fields ++ second.fields)
+    val zero = JSONObject()
   }
-  private[this] def jsonIntToShort(jsonInt: JSONInt): ValidationNEL[JSONError, Short] = {
-    if (jsonInt.value >= Short.MinValue && jsonInt.value <= Short.MaxValue) {
-      jsonInt.value.shortValue().successNel
-    } else {
-      InvalidConversionJSONError(jsonInt, implicitly[Manifest[Short]]).failNel
-    }
-  }  
-  implicit def jsonIntToRichJSONInt(jsonInt: JSONInt): RichJSONInt = new RichJSONInt {   
-    def asLong() = jsonIntToLong(jsonInt)
-    def asInt() = jsonIntToInt(jsonInt)
-    def asShort() = jsonIntToShort(jsonInt)
-    def asBigInt() = jsonInt.value.successNel
+  implicit val jsonArrayMonoid: Monoid[JSONArray] = new Monoid[JSONArray] {
+    def append(first: JSONArray, second: => JSONArray) = JSONArray(first.elements ++ second.elements)
+    val zero = JSONArray()
   }
-  implicit def validationJSONIntToRichJSONInt(validation: ValidationNEL[JSONError, JSONInt]): RichJSONInt = new RichJSONInt {
-    def asLong() = validation.flatMap(jsonIntToLong)
-    def asInt() = validation.flatMap(jsonIntToInt)
-    def asShort() = validation.flatMap(jsonIntToShort)
-    def asBigInt() = validation.map(_.value)
-  }
-  implicit def jsonDecimalToRichJSONDecimal(jsonDecimal: JSONDecimal): RichJSONDecimal = new RichJSONDecimal {
-    def asBigDecimal() = jsonDecimal.value.successNel
-  }
-  implicit def validationJSONDecimalToRichJSONDecimal(validation: ValidationNEL[JSONError, JSONDecimal]): RichJSONDecimal = new RichJSONDecimal {
-    def asBigDecimal() = validation.map(_.value)
-  }
-  implicit def jsonStringToRichJSONString(jsonString: JSONString): RichJSONString = new RichJSONString {
-    def asString() = jsonString.value.successNel
-  }
-  implicit def validationJSONStringToRichJSONString(validation: ValidationNEL[JSONError, JSONString]): RichJSONString = new RichJSONString {
-    def asString() = validation.map(_.value)
-  }
-  implicit def jsonBoolToRichJSONBool(jsonBool: JSONBool): RichJSONBool = new RichJSONBool {
-    def asBoolean() = jsonBool.value.successNel
-  }
-  implicit def validationJSONBoolToRichJSONBool(validation: ValidationNEL[JSONError, JSONBool]): RichJSONBool = new RichJSONBool {
-    def asBoolean() = validation.map(_.value)
-  }
-  implicit def jsonArrayToRichJSONArray(jsonArray: JSONArray): RichJSONArray = new RichJSONArray {
-    def asElements() = jsonArray.elements.successNel
-    def collectElements[T](partialFunction: PartialFunction[JSONValue, T]) = jsonArray.elements.collect(partialFunction).successNel[JSONError]
-  }
-  implicit def validationJSONArrayToRichJSONArray(validation: ValidationNEL[JSONError, JSONArray]): RichJSONArray = new RichJSONArray {
-    def asElements() = validation.map(_.elements)
-    def collectElements[T](partialFunction: PartialFunction[JSONValue, T]) = validation.map(_.elements.collect(partialFunction))
-  }
-  implicit def jsonObjectToRichJSONObject(jsonObject: JSONObject): RichJSONObject = new RichJSONObject {
-    def asFields() = jsonObject.fields.successNel
-  }
-  implicit def validationJSONObjectToRichJSONObject(validation: ValidationNEL[JSONError, JSONObject]): RichJSONObject = new RichJSONObject {
-    def asFields() = validation.map(_.fields)
-  }  
+
+  def invalidConversionError[T](jsonValue: JSONValue)(implicit targetManifest: Manifest[T]): JSONError = InvalidConversionJSONError(jsonValue, targetManifest)
+  def parseError(message: String): JSONError = JSONParseError(message)
+  def subElementNotFoundError(jsonValue: JSONValue, elementName: String): JSONError = SubElementNotFoundJSONError(jsonValue, elementName)
 }

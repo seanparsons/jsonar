@@ -1,6 +1,5 @@
 import sbt._
 import Keys._
-import java.io.File
 import ls.Plugin._
 import sbtrelease.Release._
 
@@ -9,20 +8,12 @@ object JSONARBuild extends Build {
     id = "root",
     base = file("."),
     settings = Defaults.defaultSettings ++ releaseSettings ++ lsSettings ++ Seq(
-      scalaVersion := "2.9.1",
-      libraryDependencies <+= scalaVersion{v => 
-        if (v == "2.10.0-M2") "org.scalaz" % "scalaz-core_2.10.0-M1" % "6.0.4"
-        else "org.scalaz" %% "scalaz-core" % "6.0.4"
-      },
-      libraryDependencies <+= scalaVersion{v => 
-        if (v.startsWith("2.10")) "org.scala-tools.testing" % "scalacheck_2.9.1" % "1.9" % "test"
-        else "org.scala-tools.testing" %% "scalacheck" % "1.9" % "test"
-      },
-      libraryDependencies <+= scalaVersion{v =>
-        if (v.startsWith("2.10")) "org.specs2" % "specs2_2.9.1" % "1.7.1" % "test"
-        else "org.specs2" %% "specs2" % "1.7.1" % "test"
-      },
-      crossScalaVersions := Seq("2.9.0-1", "2.9.1", "2.10.0-M1", "2.10.0-M2"),
+      scalaVersion := "2.9.2",
+      resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      libraryDependencies += "org.scalaz" % "scalaz-core_2.9.2" % "7.0-SNAPSHOT",
+      libraryDependencies += "org.scala-tools.testing" % "scalacheck_2.9.1" % "1.9" % "test",
+      libraryDependencies += "org.specs2" % "specs2_2.9.1" % "1.7.1" % "test",
+      crossScalaVersions := Seq("2.9.0-1", "2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M1", "2.10.0-M2"),
       organization := "com.github.seanparsons.jsonar",
       name := "jsonar",
       initialCommands := """
