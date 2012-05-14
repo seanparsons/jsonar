@@ -2,6 +2,7 @@ package com.github.seanparsons.jsonar
 
 import scalaz._
 import Scalaz._
+import scalaz.std.stream
 import java.math.BigInteger
 import java.math.{BigDecimal => JavaBigDecimal}
 
@@ -94,6 +95,9 @@ case class JSONObject(fields: Map[JSONString, JSONValue] = Map()) extends JSONVa
       .getOrElse(subElementNotFoundError(this, elementName).failNel[JSONValue])
   }
 
+  def toZipper(): Option[Zipper[(JSONString, JSONValue)]] = stream.toZipper(fields.toStream)
+  def zipperEnd(): Option[Zipper[(JSONString, JSONValue)]] = stream.zipperEnd(fields.toStream)
+
   def isDefinedAt(key: JSONString) = fields.isDefinedAt(key)
   override def apply(key: JSONString) = fields(key)
   override def toString() = "JSONObject(%s)".format(fields)
@@ -104,6 +108,10 @@ object JSONObject {
 case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Traversable[JSONValue] with PartialFunction[Int, JSONValue] {
   def isDefinedAt(key: Int) = elements.isDefinedAt(key)
   def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
+
+  def toZipper(): Option[Zipper[JSONValue]] = stream.toZipper(elements.toStream)
+  def zipperEnd(): Option[Zipper[JSONValue]] = stream.zipperEnd(elements.toStream)
+
   override def apply(key: Int) = elements(key)
   def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
   override def toString() = "JSONArray(%s)".format(elements)

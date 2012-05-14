@@ -10,10 +10,20 @@ object JSONARBuild extends Build {
     settings = Defaults.defaultSettings ++ releaseSettings ++ lsSettings ++ Seq(
       scalaVersion := "2.9.2",
       resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      libraryDependencies += "org.scalaz" % "scalaz-core_2.9.2" % "7.0-SNAPSHOT",
-      libraryDependencies += "org.scala-tools.testing" % "scalacheck_2.9.1" % "1.9" % "test",
-      libraryDependencies += "org.specs2" % "specs2_2.9.1" % "1.7.1" % "test",
-      crossScalaVersions := Seq("2.9.0-1", "2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M1", "2.10.0-M2"),
+      libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
+        case "2.9.1-1" => "org.scalaz" % "scalaz-core_2.9.1" % "7.0-SNAPSHOT"
+        case "2.10.0-M3" => "org.scalaz" % "scalaz-core_2.9.2" % "7.0-SNAPSHOT"
+        case _ => "org.scalaz" %% "scalaz-core" % "7.0-SNAPSHOT"
+      }},
+      libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
+        case "2.9.1-1" | "2.9.2" => "org.scalacheck" % "scalacheck_2.9.1" % "1.9" % "test"
+        case sVersion if (sVersion.startsWith("2.10.")) => "org.scalacheck" %% "scalacheck" % "1.10-SNAPSHOT" % "test"
+        case _ => "org.scalacheck" %% "scalacheck" % "1.9" % "test"
+      }},
+      libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
+        case _ => "org.specs2" %% "specs2" % "1.9" % "test"
+      }},
+      crossScalaVersions := Seq("2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M3"),
       organization := "com.github.seanparsons.jsonar",
       name := "jsonar",
       initialCommands := """
