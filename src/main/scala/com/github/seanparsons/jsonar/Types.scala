@@ -6,6 +6,32 @@ import scalaz.std.stream
 import java.math.BigInteger
 import java.math.{BigDecimal => JavaBigDecimal}
 
+trait JSONLike {
+  def asJSONString: ValidationNEL[JSONError, JSONString]
+  def asJSONNumber: ValidationNEL[JSONError, JSONNumber]
+  def asJSONBool: ValidationNEL[JSONError, JSONBool]
+  def asJSONNull: ValidationNEL[JSONError, JSONNull]
+  def asJSONArray: ValidationNEL[JSONError, JSONArray]
+  def asJSONObject: ValidationNEL[JSONError, JSONObject]
+  def asOptionalJSONString: ValidationNEL[JSONError, Option[JSONString]]
+  def asOptionalJSONNumber: ValidationNEL[JSONError, Option[JSONNumber]]
+  def asOptionalJSONBool: ValidationNEL[JSONError, Option[JSONBool]]
+  def asOptionalJSONArray: ValidationNEL[JSONError, Option[JSONArray]]
+  def asOptionalJSONObject: ValidationNEL[JSONError, Option[JSONObject]]
+  def asBigDecimal(): ValidationNEL[JSONError, BigDecimal]
+  def asBigInt(): ValidationNEL[JSONError, BigInt]
+  def asLong(): ValidationNEL[JSONError, Long]
+  def asInt(): ValidationNEL[JSONError, Int]
+  def asShort(): ValidationNEL[JSONError, Short]
+  def asByte(): ValidationNEL[JSONError, Byte]
+  def asString(): ValidationNEL[JSONError, String]
+  def asBoolean(): ValidationNEL[JSONError, Boolean]
+  def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]]
+  def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]]
+  def /(elementName: String): ValidationNEL[JSONError, JSONValue]
+  def search(elementName: String): ValidationNEL[JSONError, JSONValue]
+}
+
 sealed abstract class JSONError {
   def message: String
 }
@@ -20,63 +46,78 @@ case class InvalidConversionJSONError[T](value: JSONValue, target: Manifest[T]) 
   val message = "%s cannot be represented by %s.".format(value, target.erasure.getSimpleName)
 }
 
-sealed abstract class JSONValue {
-  private[this] def safeCast[T <: JSONValue](implicit targetManifest: Manifest[T]): ValidationNEL[JSONError, T] = {
-    if (targetManifest.erasure.isInstance(this)) {
-      this.asInstanceOf[T].successNel
-    } else {
-      val error: JSONError = NotInstanceJSONError(this, targetManifest);
-      error.failNel
-    }
-  }
-  def asJSONString = safeCast[JSONString]
-  def asJSONInt = safeCast[JSONInt]
-  def asJSONDecimal = safeCast[JSONDecimal]
-  def asJSONBool = safeCast[JSONBool]
-  def asJSONNull = safeCast[JSONNull]
-  def asJSONArray = safeCast[JSONArray]
-  def asJSONObject = safeCast[JSONObject]
+sealed abstract class JSONValue extends JSONLike {
+  def asJSONString(): ValidationNEL[JSONError, JSONString] = invalidConversionError(this).failNel
+  def asJSONNumber(): ValidationNEL[JSONError, JSONNumber] = invalidConversionError(this).failNel
+  def asJSONBool(): ValidationNEL[JSONError, JSONBool] = invalidConversionError(this).failNel
+  def asJSONNull(): ValidationNEL[JSONError, JSONNull] = invalidConversionError(this).failNel
+  def asJSONArray(): ValidationNEL[JSONError, JSONArray] = invalidConversionError(this).failNel
+  def asJSONObject(): ValidationNEL[JSONError, JSONObject] = invalidConversionError(this).failNel
+  def asOptionalJSONString(): ValidationNEL[JSONError, Option[JSONString]] = asJSONNull.map(_ => none).orElse(asJSONString.map(_.some))
+  def asOptionalJSONNumber(): ValidationNEL[JSONError, Option[JSONNumber]] = asJSONNull.map(_ => none).orElse(asJSONNumber.map(_.some))
+  def asOptionalJSONBool(): ValidationNEL[JSONError, Option[JSONBool]] = asJSONNull.map(_ => none).orElse(asJSONBool.map(_.some))
+  def asOptionalJSONArray(): ValidationNEL[JSONError, Option[JSONArray]] = asJSONNull.map(_ => none).orElse(asJSONArray.map(_.some))
+  def asOptionalJSONObject(): ValidationNEL[JSONError, Option[JSONObject]] = asJSONNull.map(_ => none).orElse(asJSONObject.map(_.some))
+
+  // JSONNumber
+  def asBigDecimal(): ValidationNEL[JSONError, BigDecimal] = invalidConversionError(this).failNel
+  def asBigInt(): ValidationNEL[JSONError, BigInt] = invalidConversionError(this).failNel
+  def asLong(): ValidationNEL[JSONError, Long] = invalidConversionError(this).failNel
+  def asInt(): ValidationNEL[JSONError, Int] = invalidConversionError(this).failNel
+  def asShort(): ValidationNEL[JSONError, Short] = invalidConversionError(this).failNel
+  def asByte(): ValidationNEL[JSONError, Byte] = invalidConversionError(this).failNel
+
+  // JSONString
+  def asString(): ValidationNEL[JSONError, String] = invalidConversionError(this).failNel
+
+  // JSONBool
+  def asBoolean(): ValidationNEL[JSONError, Boolean] = invalidConversionError(this).failNel
+
+  // JSONObject
+  def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = invalidConversionError(this).failNel
+  def /(elementName: String): ValidationNEL[JSONError, JSONValue] = subElementNotFoundError(this, elementName).failNel
+  def search(elementName: String): ValidationNEL[JSONError, JSONValue] = subElementNotFoundError(this, elementName).failNel
+
+  // JSONArray
+  def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = invalidConversionError(this).failNel
 }
 sealed abstract class JSONNull extends JSONValue
-case object JSONNull extends JSONNull
-case class JSONString(value: String) extends JSONValue
-sealed abstract class JSONNumber extends JSONValue
-case class JSONDecimal(value: BigDecimal) extends JSONNumber {
+case object JSONNull extends JSONNull {
+  override def asJSONNull(): ValidationNEL[JSONError, JSONNull] = this.successNel
+}
+case class JSONString(value: String) extends JSONValue {
+  override def asJSONString(): ValidationNEL[JSONError, JSONString] = this.successNel
+  override def asString: ValidationNEL[JSONError, String] = value.successNel
+}
+case class JSONNumber(value: BigDecimal) extends JSONValue {
   def this(value: JavaBigDecimal) = this(new BigDecimal(value))
+  def this(value: BigInt) = this(new JavaBigDecimal(value.bigInteger))
   def this(value: Int) = this(BigDecimal(value))
   def this(value: Long) = this(BigDecimal(value))
   def this(value: Double) = this(BigDecimal(value))
   def this(value: Float) = this(BigDecimal(value))
-}
-case class JSONInt(value: BigInt) extends JSONNumber {
-  def this(value: BigInteger) = this(new BigInt(value))
-  def this(value: Int) = this(BigInt(value))
-  def this(value: Long) = this(BigInt(value))
-  def asLong(): ValidationNEL[JSONError, Long] = {
-    if (value >= Long.MinValue && value <= Long.MaxValue) {
-      value.longValue().successNel
-    } else {
-      invalidConversionError[Long](this).failNel
+  def this(value: Short) = this(BigDecimal(value))
+  def this(value: Byte) = this(BigDecimal(value))
+  @inline
+  private[this] def convertTo[T](conversion: => T)(implicit manifest: Manifest[T]): ValidationNEL[JSONError, T] = {
+    try {
+      conversion.successNel
+    } catch {
+      case throwable => invalidConversionError[T](this).failNel
     }
   }
-  def asInt(): ValidationNEL[JSONError, Int] = {
-    if (value >= Int.MinValue && value <= Int.MaxValue) {
-      value.intValue().successNel
-    } else {
-      invalidConversionError[Int](this).failNel
-    }
-  }
-  def asShort(): ValidationNEL[JSONError, Short] = {
-    if (value >= Short.MinValue && value <= Short.MaxValue) {
-      value.shortValue().successNel
-    } else {
-      invalidConversionError[Short](this).failNel
-    }
-  }
-
+  override def asJSONNumber(): ValidationNEL[JSONError, JSONNumber] = this.successNel
+  override def asBigDecimal(): ValidationNEL[JSONError, BigDecimal] = value.successNel
+  override def asBigInt(): ValidationNEL[JSONError, BigInt] = convertTo(value.toBigInt)
+  override def asLong(): ValidationNEL[JSONError, Long] = convertTo(value.toLongExact)
+  override def asInt(): ValidationNEL[JSONError, Int] = convertTo(value.toIntExact)
+  override def asShort(): ValidationNEL[JSONError, Short] = convertTo(value.toShortExact)
+  override def asByte(): ValidationNEL[JSONError, Byte] = convertTo(value.toByteExact)
 }
 sealed abstract class JSONBool extends JSONValue {
   def value: Boolean
+  override def asJSONBool: ValidationNEL[JSONError, JSONBool] = this.successNel
+  override def asBoolean(): ValidationNEL[JSONError, Boolean] = value.successNel
 }
 case object JSONBoolTrue extends JSONBool {
   val value = true
@@ -87,19 +128,18 @@ case object JSONBoolFalse extends JSONBool {
 case class JSONObject(fields: Map[JSONString, JSONValue] = Map()) extends JSONValue with PartialFunction[JSONString, JSONValue] {
   def this(fields: (JSONString, JSONValue)*) = this(fields.toMap)
 
-  def \(elementName: String): ValidationNEL[JSONError, JSONValue] = search(elementName)
-  def search(elementName: String): ValidationNEL[JSONError, JSONValue] = {
+  override def /(elementName: String): ValidationNEL[JSONError, JSONValue] = search(elementName)
+  override def search(elementName: String): ValidationNEL[JSONError, JSONValue] = {
     fields
       .get(JSONString(elementName))
       .map(jsonValue => jsonValue.successNel[JSONError])
       .getOrElse(subElementNotFoundError(this, elementName).failNel[JSONValue])
   }
 
-  def toZipper(): Option[Zipper[(JSONString, JSONValue)]] = stream.toZipper(fields.toStream)
-  def zipperEnd(): Option[Zipper[(JSONString, JSONValue)]] = stream.zipperEnd(fields.toStream)
-
-  def isDefinedAt(key: JSONString) = fields.isDefinedAt(key)
+  override def asJSONObject(): ValidationNEL[JSONError, JSONObject] = this.successNel
+  override def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = fields.successNel
   override def apply(key: JSONString) = fields(key)
+  def isDefinedAt(key: JSONString) = fields.isDefinedAt(key)
   override def toString() = "JSONObject(%s)".format(fields)
 }
 object JSONObject {
@@ -109,10 +149,9 @@ case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Tr
   def isDefinedAt(key: Int) = elements.isDefinedAt(key)
   def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
 
-  def toZipper(): Option[Zipper[JSONValue]] = stream.toZipper(elements.toStream)
-  def zipperEnd(): Option[Zipper[JSONValue]] = stream.zipperEnd(elements.toStream)
-
-  override def apply(key: Int) = elements(key)
+  override def asJSONArray(): ValidationNEL[JSONError, JSONArray] = this.successNel
+  override def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = elements.successNel
+  override def apply(position: Int) = elements(position)
   def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
   override def toString() = "JSONArray(%s)".format(elements)
 }

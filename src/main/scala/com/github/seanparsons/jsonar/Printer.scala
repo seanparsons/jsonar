@@ -12,8 +12,7 @@ object Printer {
     stringBuilder.append(JSONEscaping.quote(jsonString.value))
     stringBuilder.append('"')
   }
-  @inline def appendJSONInt(stringBuilder: StringBuilder, jsonInt: JSONInt) = stringBuilder.append(jsonInt.value.toString)
-  @inline def appendJSONDecimal(stringBuilder: StringBuilder, jsonDecimal: JSONDecimal) = stringBuilder.append(jsonDecimal.value.toString)
+  @inline def appendJSONNumber(stringBuilder: StringBuilder, jsonNumber: JSONNumber) = stringBuilder.append(jsonNumber.value.toString)
   @inline def appendJSONBoolTrue(stringBuilder: StringBuilder) = stringBuilder.append("true")
   @inline def appendJSONBoolFalse(stringBuilder: StringBuilder) = stringBuilder.append("false")
   def appendJSONObject(stringBuilder: StringBuilder, jsonObject: JSONObject) {
@@ -46,14 +45,13 @@ object Printer {
   }
   def appendJSONValue(stringBuilder: StringBuilder, jsonValue: JSONValue) {
     jsonValue match {
-      case jsonNull: JSONNull => appendJSONNull(stringBuilder)
-      case jsonString: JSONString => appendJSONString(stringBuilder, jsonString)
-      case jsonDecimal: JSONDecimal => appendJSONDecimal(stringBuilder, jsonDecimal)
-      case jsonInt: JSONInt => appendJSONInt(stringBuilder, jsonInt)
-      case JSONBoolTrue => appendJSONBoolTrue(stringBuilder)
-      case JSONBoolFalse => appendJSONBoolFalse(stringBuilder)
       case jsonObject: JSONObject => appendJSONObject(stringBuilder, jsonObject)
       case jsonArray: JSONArray => appendJSONArray(stringBuilder, jsonArray)
+      case jsonString: JSONString => appendJSONString(stringBuilder, jsonString)
+      case jsonNumber: JSONNumber=> appendJSONNumber(stringBuilder, jsonNumber)
+      case JSONBoolTrue => appendJSONBoolTrue(stringBuilder)
+      case JSONBoolFalse => appendJSONBoolFalse(stringBuilder)
+      case jsonNull: JSONNull => appendJSONNull(stringBuilder)
     }
   }
 }

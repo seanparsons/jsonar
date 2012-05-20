@@ -9,10 +9,10 @@ object KnownResults extends DataTables {
     "JSON"                                            | "JSONValue"                                                                                                           |
     """[]"""                                          ! JSONArray()                                                                                                           |
     """{}"""                                          ! JSONObject()                                                                                                          |                                              
-    """[10]"""                                        ! JSONArray(Seq(JSONInt(10)))                                                                                           |
-    """{"number":20}"""                               ! JSONObject(Map(JSONString("number") -> JSONInt(20)))                                                                  |
-    """{"firstKey":100,"secondKey":"secondValue"}"""  ! new JSONObject(JSONString("firstKey") -> JSONInt(100), JSONString("secondKey") -> JSONString("secondValue"))          |
-    """[100,"secondValue"]"""                         ! JSONArray(Seq(JSONInt(100), JSONString("secondValue")))                                                               |
+    """[10]"""                                        ! JSONArray(Seq(JSONNumber(10)))                                                                                        |
+    """{"number":20}"""                               ! JSONObject(Map(JSONString("number") -> JSONNumber(20)))                                                               |
+    """{"firstKey":100,"secondKey":"secondValue"}"""  ! new JSONObject(JSONString("firstKey") -> JSONNumber(100), JSONString("secondKey") -> JSONString("secondValue"))       |
+    """[100,"secondValue"]"""                         ! JSONArray(Seq(JSONNumber(100), JSONString("secondValue")))                                                            |
     """[[]]"""                                        ! JSONArray(Seq(JSONArray()))                                                                                           |
     """[[[]]]"""                                      ! JSONArray(Seq(JSONArray(Seq(JSONArray()))))                                                                           |
     """[[],[]]"""                                     ! JSONArray(Seq(JSONArray(), JSONArray()))                                                                              |
@@ -26,10 +26,10 @@ object KnownResults extends DataTables {
     """"\\""""                                        ! JSONString("\\")                                                                                                      |
     """"\/""""                                        ! JSONString("/")                                                                                                       |
     """"\"""""                                        ! JSONString("\"")                                                                                                      |
-    "158699798998941697"                              ! JSONInt(BigInt(158699798998941697l))
+    "158699798998941697"                              ! new JSONNumber(BigInt(158699798998941697l))
     
   def parseFailures = 
-    "JSON"                                            | "parse result"                                                                                                        |
+    "JSON"                                            | "parse result"                                                                                                    |
     """[][]"""                                        ! parseError("JSON contains invalid suffix content: []").failNel[JSONValue]                                         |
     """{}{}"""                                        ! parseError("JSON contains invalid suffix content: {}").failNel[JSONValue]                                         |
     "\"\"\"\""                                        ! parseError("JSON contains invalid suffix content: \"\"").failNel[JSONValue]                                       |

@@ -16,12 +16,14 @@ object JSONARBuild extends Build {
         case _ => "org.scalaz" %% "scalaz-core" % "7.0-SNAPSHOT"
       }},
       libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
-        case _ => "org.scalacheck" %% "scalacheck" % "1.10-SNAPSHOT" % "test"
+        //case _ => "org.scalacheck" %% "scalacheck" % "1.10-SNAPSHOT" % "test"
+        case "2.9.1-1" => "org.scalacheck" % "scalacheck_2.9.1" % "1.9" % "test"
+        case _ => "org.scalacheck" %% "scalacheck" % "1.9" % "test"
       }},
       libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
         case _ => "org.specs2" %% "specs2" % "1.9" % "test"
       }},
-      crossScalaVersions := Seq("2.9.1", "2.9.1-1", "2.9.2", "2.10.0-M3"),
+      crossScalaVersions := Seq("2.9.1", "2.9.1-1", "2.9.2"),
       organization := "com.github.seanparsons.jsonar",
       name := "jsonar",
       initialCommands := """
@@ -29,7 +31,7 @@ object JSONARBuild extends Build {
         import scalaz._
         import Scalaz._
         """,
-      scalacOptions ++= Seq("-deprecation"),
+      scalacOptions ++= Seq("-deprecation", "-unchecked", "-optimise"),
       LsKeys.tags in LsKeys.lsync := Seq("json", "scalaz"),
       description in LsKeys.lsync := "The JSON library that just works.",
       publishMavenStyle := true,

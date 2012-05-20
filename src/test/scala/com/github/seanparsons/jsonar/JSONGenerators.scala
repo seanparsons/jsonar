@@ -2,7 +2,7 @@ package com.github.seanparsons.jsonar
 
 import org.scalacheck.Gen._
 import org.scalacheck.Prop
-import org.scalacheck.Arbitrary._
+import org.scalacheck.Arbitrary.{arbBigDecimal => _,  _}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import scalaz._
@@ -24,12 +24,23 @@ object JSONGenerators {
   def isValidUnicodeCodePoint(codePoint: Int): Boolean = {
     Character.isLetterOrDigit(codePoint) || Character.isWhitespace(codePoint) || Character.isISOControl(codePoint)
   }
+
+  implicit lazy val backportedArbBigDecimal: Arbitrary[BigDecimal] = {
+    import java.math.MathContext._
+    val mcGen = oneOf(UNLIMITED, DECIMAL32, DECIMAL64, DECIMAL128)
+    val bdGen = for {
+      x <- arbBigInt.arbitrary
+      mc <- mcGen
+      limit <- value(if(mc == UNLIMITED) 0 else math.max(x.abs.toString.length - mc.getPrecision, 0))
+      scale <- Gen.chooseNum(Int.MinValue + limit , Int.MaxValue)
+    } yield BigDecimal(x, scale, mc)
+    Arbitrary(bdGen)
+  }
+
   val intGenerator: Gen[StringBuilder] = arbitrary[Long].map(long => new StringBuilder().append(long))
-  val jsonIntGenerator: Gen[JSONInt] = arbitrary[Long].map(long => JSONInt(long))
+  val jsonNumberGenerator: Gen[JSONNumber] = arbitrary[BigDecimal].map(number => JSONNumber(number))
   val doubleGenerator: Gen[StringBuilder] = arbitrary[Double].map(double => new StringBuilder().append(double))
-  val jsonDecimalGenerator: Gen[JSONDecimal] = arbitrary[Double].map(double => JSONDecimal(double))
   val numberGenerator: Gen[StringBuilder] = oneOf(intGenerator, doubleGenerator)
-  val jsonNumberGenerator: Gen[JSONNumber] = oneOf(jsonIntGenerator, jsonDecimalGenerator)
   val stringGenerator: Gen[StringBuilder] = arbitrary[String].map{string =>
     val codePoints = codePointStream(string).filter(isValidUnicodeCodePoint)
     val builder = codePoints.foldLeft(new java.lang.StringBuilder().append('"')){(builder, codePoint) =>

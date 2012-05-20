@@ -19,8 +19,7 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
   }
   val jsonValueGenerators = Set[GeneratorAndConversionChecks[_ <: JSONValue]](
     new GeneratorAndConversionChecks[JSONNull]("asJSONNull", classOf[JSONNull], jsonNothingGenerator, (jsonNull) => jsonNull.asJSONNull === jsonNull.success, (jsonValue) => jsonValue.asJSONNull.isFailure),
-    new GeneratorAndConversionChecks[JSONInt]("asJSONInt", classOf[JSONInt], jsonIntGenerator, (jsonInt) => jsonInt.asJSONInt === jsonInt.success, (jsonValue) => jsonValue.asJSONInt.isFailure),
-    new GeneratorAndConversionChecks[JSONDecimal]("asJSONDecimal", classOf[JSONDecimal], jsonDecimalGenerator, (jsonDecimal) => jsonDecimal.asJSONDecimal === jsonDecimal.success, (jsonValue) => jsonValue.asJSONDecimal.isFailure),
+    new GeneratorAndConversionChecks[JSONNumber]("asJSONNumber", classOf[JSONNumber], jsonNumberGenerator, (jsonNumber) => jsonNumber.asJSONNumber === jsonNumber.success, (jsonValue) => jsonValue.asJSONNumber.isFailure),
     new GeneratorAndConversionChecks[JSONString]("asJSONString", classOf[JSONString], jsonStringGenerator, (jsonString) => jsonString.asJSONString === jsonString.success, (jsonValue) => jsonValue.asJSONString.isFailure),
     new GeneratorAndConversionChecks[JSONBool]("asJSONBool", classOf[JSONBool], jsonBoolGenerator, (jsonBool) => jsonBool.asJSONBool === jsonBool.success, (jsonValue) => jsonValue.asJSONBool.isFailure),
     new GeneratorAndConversionChecks[JSONArray]("asJSONArray", classOf[JSONArray], jsonArrayGenerator(), (jsonArray) => jsonArray.asJSONArray === jsonArray.success, (jsonValue) => jsonValue.asJSONArray.isFailure),
@@ -31,7 +30,7 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     "Any JSONObject with a single key present in the fields" !
       forAll(jsonStringGenerator, Gen.oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator)){(key, value) =>
         val jsonObject = JSONObject(key -> value)
-        jsonObject \ key.value === value.success
+        jsonObject / key.value === value.success
       } ^
     "For comprehension drilling down" ! {
       val userMap: JSONObject = JSONObject(Map(JSONString("1") -> JSONString("Sean"), JSONString("2") -> JSONString("Ricky")))
@@ -39,13 +38,13 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
       val jsonObject: JSONObject = JSONObject(Map(JSONString("users") -> userMap, JSONString("orders") -> orderMap))
       val expectedResult: Validation[String, (JSONString, JSONArray)] = (JSONString("Sean"), JSONArray(JSONString("Item 1"), JSONString("Item 2"))).success[String]
       val nameAndOrders = for {
-        users <- jsonObject \ "users"
+        users <- jsonObject / "users"
         usersJSONObject <- users.asJSONObject
-        usernameJSONValue <- usersJSONObject \ "1"
+        usernameJSONValue <- usersJSONObject / "1"
         username <- usernameJSONValue.asJSONString
-        orders <- jsonObject \ "orders"
+        orders <- jsonObject / "orders"
         ordersJSONObject <- orders.asJSONObject
-        userOrders <- ordersJSONObject \ "1"
+        userOrders <- ordersJSONObject / "1"
         ordersJSONArray <- userOrders.asJSONArray
       } yield (username, userOrders)
       nameAndOrders must_== expectedResult
@@ -61,6 +60,6 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     }
   }.reduceLeft(_ ^ _)
   
-  def is = doubleSlashSpec ^ generatorAndConversionSpec
+  def is = args.report(failtrace = true) ^ doubleSlashSpec ^ generatorAndConversionSpec
   
 }

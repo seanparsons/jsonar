@@ -122,11 +122,7 @@ object Parser {
       case Some(NullToken) => (stream.tail, JSONNull).successNel
       case Some(NumberToken(numberText)) => {
         try {
-          (stream.tail, if (numberText.toLowerCase.contains('e')) {
-            JSONDecimal(BigDecimal(numberText))
-          } else {
-            JSONInt(BigInt(numberText))
-          }).successNel
+          (stream.tail, JSONNumber(BigDecimal(numberText))).successNel
         } catch {
           case throwable => parseError(throwable.getMessage).failNel
         }
