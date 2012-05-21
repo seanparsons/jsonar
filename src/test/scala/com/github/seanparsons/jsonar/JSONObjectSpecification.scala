@@ -9,11 +9,16 @@ import Scalaz._
 import JSONGenerators._
 
 case class JSONObjectSpecification() extends Specification with ScalaCheck {
-  def is =
+  def is = args.report(failtrace = true) ^
     "JSONObject.apply" ^
       "Passing in a collection of fields" !
         forAll(jsonObjectFieldsGenerator()){fields =>
           val jsonObject = JSONObject(fields: _*)
           ("jsonObject = " + jsonObject) |: (jsonObject.fields === fields.toMap)
-        }
+        } ^
+      "Searching through multiple levels will find the correct value" !
+        forAll(arrayOrObjectAndPathGenerator){case (path, original, innerValue) =>
+          val searchedForValue = path.tail.foldLeft(original / path.head)((value, pathElement) => value / pathElement)
+          ("searchedForValue = " + searchedForValue) |: (searchedForValue === innerValue.successNel[JSONError])
+        } ^ end
 }

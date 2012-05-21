@@ -41,7 +41,7 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     new OptionalConversionChecks[JSONObject]("asOptionalJSONObject", jsonObjectGenerator(), (jsonObject) => jsonObject.asOptionalJSONObject() === jsonObject.some.success, (jsonValue) => jsonValue.asOptionalJSONObject().isFailure, (jsonNull) => jsonNull.asOptionalJSONObject() === scalazNone[JSONObject].successNel[JSONError])
   )
   
-  def doubleSlashSpec = "\\" ^
+  def doubleSlashSpec = "/" ^
     "Any JSONObject with a single key present in the fields" !
       forAll(jsonStringGenerator, Gen.oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator)){(key, value) =>
         val jsonObject = JSONObject(key -> value)

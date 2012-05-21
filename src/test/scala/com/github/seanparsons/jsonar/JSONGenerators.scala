@@ -7,8 +7,11 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import scalaz._
 import Scalaz._
+import scala.util.Random.shuffle
 
 object JSONGenerators {
+  val maxJSONStructureDepth = 5
+
   def codePointStream(string: String): Stream[Int] = {
     // Try to remove anything that could be misconstrued as an escape character.
     val filteredString = JSONEscaping.quote(string.filter(_ != '\\'))
@@ -69,9 +72,9 @@ object JSONGenerators {
     }
     builder.append(']')
   }
-  def jsonArrayItemsGenerator(depth: Int = 3): Gen[Seq[JSONValue]] = listOfN(5, jsonValueGenerator(depth - 1))
-  def jsonArrayGenerator(depth: Int = 3): Gen[JSONArray] = jsonArrayItemsGenerator(depth).map{values => JSONArray(values)}
-  def objectGenerator(depth: Int = 3): Gen[StringBuilder] = arbImmutableMap(Arbitrary(stringGenerator), Arbitrary(valueGenerator(depth - 1))).arbitrary.map{map =>
+  def jsonArrayItemsGenerator(depth: Int = maxJSONStructureDepth): Gen[Seq[JSONValue]] = listOfN(5, jsonValueGenerator(depth - 1))
+  def jsonArrayGenerator(depth: Int = maxJSONStructureDepth): Gen[JSONArray] = jsonArrayItemsGenerator(depth).map{values => JSONArray(values)}
+  def objectGenerator(depth: Int = maxJSONStructureDepth): Gen[StringBuilder] = arbImmutableMap(Arbitrary(stringGenerator), Arbitrary(valueGenerator(depth - 1))).arbitrary.map{map =>
     val builder = new StringBuilder()
     def addPair(builder: StringBuilder, pair: (StringBuilder, StringBuilder)): StringBuilder = {
       builder.append(pair._1)
@@ -89,11 +92,11 @@ object JSONGenerators {
     "{%s}".format(map.take(10).map(pair => "%s:%s".format(pair._1, pair._2)).mkString(","))
     builder.append('}')
   }
-  def jsonObjectFieldsGenerator(depth: Int = 3): Gen[Seq[(JSONString, JSONValue)]] = listOfN(5, arbTuple2(Arbitrary(jsonStringGenerator), Arbitrary(jsonValueGenerator(depth - 1))).arbitrary)
-  def jsonObjectGenerator(depth: Int = 3): Gen[JSONObject] = arbImmutableMap(Arbitrary(jsonStringGenerator), Arbitrary(jsonValueGenerator(depth - 1))).arbitrary.map{map =>
+  def jsonObjectFieldsGenerator(depth: Int = maxJSONStructureDepth): Gen[Seq[(JSONString, JSONValue)]] = listOfN(5, arbTuple2(Arbitrary(jsonStringGenerator), Arbitrary(jsonValueGenerator(depth - 1))).arbitrary)
+  def jsonObjectGenerator(depth: Int = maxJSONStructureDepth): Gen[JSONObject] = arbImmutableMap(Arbitrary(jsonStringGenerator), Arbitrary(jsonValueGenerator(depth - 1))).arbitrary.map{map =>
     JSONObject(map)
   }
-  def valueGenerator(depth: Int = 3): Gen[StringBuilder] = {
+  def valueGenerator(depth: Int = maxJSONStructureDepth): Gen[StringBuilder] = {
     if (depth > 1) {
       oneOf(numberGenerator, stringGenerator, booleanGenerator, nothingGenerator, arrayGenerator(depth - 1), objectGenerator(depth - 1))
     } else {
@@ -101,7 +104,7 @@ object JSONGenerators {
     }
   }
   val nonJSONObjectGenerator = oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator, jsonArrayGenerator())
-  def jsonValueGenerator(depth: Int = 3): Gen[JSONValue] = {
+  def jsonValueGenerator(depth: Int = maxJSONStructureDepth): Gen[JSONValue] = {
     if (depth > 1) {
       oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator, jsonArrayGenerator(depth - 1), jsonObjectGenerator(depth - 1))
     } else {
@@ -109,4 +112,29 @@ object JSONGenerators {
     }
   }
   val arrayOrObjectGenerator = oneOf(arrayGenerator(), objectGenerator())
+
+  def objectsOfObjectsGenerator(depth: Int = maxJSONStructureDepth): Gen[JSONValue] = {
+    if (depth > 1) {
+      listOfN(2, arbTuple2(Arbitrary(jsonStringGenerator), Arbitrary(objectsOfObjectsGenerator(depth - 1))).arbitrary).map(fields => JSONObject(fields.toMap))
+    } else {
+      oneOf(jsonNumberGenerator, jsonStringGenerator, jsonBoolGenerator, jsonNothingGenerator)
+    }
+  }
+
+  val arrayOrObjectAndPathGenerator: Gen[(Seq[String], JSONValue, JSONValue)] = objectsOfObjectsGenerator().map{jsonvalue =>
+    def buildPath(currentPath: Seq[String], original: JSONValue, jsonValue: JSONValue): (Seq[String], JSONValue, JSONValue) = {
+      jsonValue match {
+        case jsonObject: JSONObject => {
+          shuffle(jsonObject.fields.collect{case pair@ (innerString: JSONString, innerValue: JSONValue) => pair}.toList)
+            .headOption
+            .map{innerPair =>
+              buildPath(currentPath :+ innerPair._1.value, original, innerPair._2)
+            }
+            .getOrElse((currentPath, original, jsonObject))
+        }
+        case other => (currentPath, original, other)
+      }
+    }
+    buildPath(Seq(), jsonvalue, jsonvalue)
+  }
 }
