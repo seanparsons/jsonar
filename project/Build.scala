@@ -23,7 +23,7 @@ object JSONARBuild extends Build {
       libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {
         case _ => "org.specs2" %% "specs2" % "1.9" % "test"
       }},
-      crossScalaVersions := Seq("2.9.1", "2.9.1-1", "2.9.2"),
+      crossScalaVersions := Seq("2.9.1", "2.9.1-1", "2.9.2"), // ++ (1 to 3).map("2.10.0-M" + _.toString),
       organization := "com.github.seanparsons.jsonar",
       name := "jsonar",
       initialCommands := """
