@@ -2,12 +2,14 @@ import sbt._
 import Keys._
 import ls.Plugin._
 import sbtrelease.Release._
+import de.johoop.jacoco4sbt._
+import JacocoPlugin._
 
 object JSONARBuild extends Build {
   lazy val project = Project(
     id = "root",
     base = file("."),
-    settings = Defaults.defaultSettings ++ releaseSettings ++ lsSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ releaseSettings ++ jacoco.settings ++ lsSettings ++ Seq(
       scalaVersion := "2.9.2",
       resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
       libraryDependencies <+= (scalaVersion){scalaVersion => scalaVersion match {

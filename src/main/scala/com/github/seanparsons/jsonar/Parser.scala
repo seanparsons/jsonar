@@ -9,7 +9,6 @@ sealed abstract class JSONToken {
 }
 abstract class OpenToken extends JSONToken
 abstract class CloseToken extends JSONToken
-case object PrecursorToken extends JSONToken { val originalStringContent = "PRECURSOR" }
 case object ArrayOpenToken extends OpenToken { val originalStringContent = "[" }
 case object ArrayCloseToken extends CloseToken { val originalStringContent = "]" }
 case object ObjectOpenToken extends OpenToken { val originalStringContent = "{" }
@@ -73,7 +72,7 @@ object Parser {
     }
   }
 
-  def tokenize(json: String): Stream[JSONToken] = tokenize(PrecursorToken, json)
+  def tokenize(json: String): Stream[JSONToken] = tokenize(none, json)
 
   def expectedSpacerToken(stream: Stream[JSONToken], token: JSONToken, failMessage: String): ValidationNEL[JSONError, Stream[JSONToken]] = {
     stream match {
@@ -122,8 +121,10 @@ object Parser {
       case Some(NullToken) => (stream.tail, JSONNull).successNel
       case Some(NumberToken(numberText)) => {
         try {
-          (stream.tail, JSONNumber(BigDecimal(numberText))).successNel
+          import java.math.MathContext._
+          (stream.tail, JSONNumber(BigDecimal(numberText, UNLIMITED))).successNel
         } catch {
+          case nfe: NumberFormatException => parseError("Value [%s] cannot be parsed into a number.".format(numberText)).failNel
           case throwable => parseError(throwable.getMessage).failNel
         }
       }
@@ -177,10 +178,10 @@ object Parser {
     } yield (afterClose, JSONString(elements._1.collect{case stringPart: StringPartToken => stringPart.parsedStringContent}.mkString))
   }
 
-  @inline def streamCons(token: JSONToken, jsonRemainder: String): Stream[JSONToken] = {
-    Stream.cons(token, tokenize(token, jsonRemainder))
-  }
+  @inline def streamCons(token: JSONToken, jsonRemainder: String): Stream[JSONToken] = Stream.cons(token, tokenize(token.some, jsonRemainder))
+
   @inline def unexpectedContent(json: String) = Stream.cons(UnexpectedContentToken(json.take(10)), Stream.empty)
+
   @inline def parseStringSegments(json: String): Stream[JSONToken] = {
     if (json.head == '"') {
       streamCons(StringBoundsCloseToken, json.tail)
@@ -192,12 +193,12 @@ object Parser {
     }
   }
 
-  @tailrec private[this] def tokenize(previousToken: JSONToken, json: String): Stream[JSONToken] = {
+  @tailrec private[this] def tokenize(previousToken: Option[JSONToken], json: String): Stream[JSONToken] = {
     if (json.isEmpty) Stream.empty
     else {
       previousToken match {
-        case StringBoundsOpenToken => parseStringSegments(json)
-        case stringPartToken: StringPartToken => parseStringSegments(json)
+        case Some(StringBoundsOpenToken) => parseStringSegments(json)
+        case Some(stringPartToken: StringPartToken) => parseStringSegments(json)
         case _ => {
           val jsonHead = json.head
           jsonHead match {

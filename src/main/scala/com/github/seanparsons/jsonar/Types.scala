@@ -80,6 +80,23 @@ sealed abstract class JSONValue extends JSONLike {
 
   // JSONArray
   def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = invalidConversionError(this).failNel
+
+  def fold[X](
+               jsonNull: => X,
+               jsonBool: Boolean => X,
+               jsonNumber: BigDecimal => X,
+               jsonString: String => X,
+               jsonArray: Seq[JSONValue] => X,
+               jsonObject: Map[JSONString, JSONValue] => X
+               ): X =
+    this match {
+      case JSONNull => jsonNull
+      case JSONBool(value) => jsonBool(value)
+      case JSONNumber(n) => jsonNumber(n)
+      case JSONString(s) => jsonString(s)
+      case JSONArray(a) => jsonArray(a)
+      case JSONObject(o) => jsonObject(o)
+    }
 }
 sealed abstract class JSONNull extends JSONValue
 case object JSONNull extends JSONNull {
@@ -113,6 +130,12 @@ case class JSONNumber(value: BigDecimal) extends JSONValue {
   override def asInt(): ValidationNEL[JSONError, Int] = convertTo(value.toIntExact)
   override def asShort(): ValidationNEL[JSONError, Short] = convertTo(value.toShortExact)
   override def asByte(): ValidationNEL[JSONError, Byte] = convertTo(value.toByteExact)
+}
+object JSONBool {
+  def unapply(jsonValue: JSONValue): Option[Boolean] = jsonValue match {
+    case jsonBool: JSONBool => Some(jsonBool.value)
+    case _ => None
+  }
 }
 sealed abstract class JSONBool extends JSONValue {
   def value: Boolean

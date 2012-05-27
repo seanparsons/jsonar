@@ -30,7 +30,7 @@ case class ReadmeExampleSpecification() extends Specification with ScalaCheck {
 
   def is = "Readme" ^
     "Printer.print" ! {
-      val json: String = Printer.print(JSONObject(JSONString("key") -> JSONString("value")))
+      val json: String = Printer.compact(JSONObject(JSONString("key") -> JSONString("value")))
       json === """{"key":"value"}"""
     }
     "Parser.parse" ! {

@@ -23,13 +23,14 @@ case class ParserSpecification() extends Specification with DataTables with Scal
     forAll(JSONGenerators.arrayOrObjectGenerator.map(_.toString).label("arrayOrObject")){json =>
       val firstParsed = Parser.parse(json)
       ("firstParsed = " + firstParsed) |: {
-        val printedJSON = firstParsed.map(jsonValue => Printer.print(jsonValue))
+        val printedJSON = firstParsed.map(jsonValue => Printer.compact(jsonValue))
         ("printedJSON = " + printedJSON) |: {
           val secondParsed = printedJSON.flatMap(secondJSON => Parser.parse(secondJSON))
           ("secondParsed = " + secondParsed) |: (firstParsed must_== secondParsed)
         }
       }
-    } 
+    }
+
   def is = "parse" ^ "valid results" ! validResultsSpec ^ "invalid results" ! invalidResultsSpec ^ parsedPrintedThenParsedAgainSpec
     
 }
