@@ -12,7 +12,8 @@ import org.specs2.specification._
 import org.specs2.matcher.DataTables
 
 case class JSONValueSpecification() extends Specification with ScalaCheck with DataTables {
-  
+  val minimalParams = set(minTestsOk -> 3)
+
   case class GeneratorAndConversionChecks[T <: JSONValue](method: String, gen: Gen[T], validCheck: (T) => Prop, invalidCheck: (JSONValue) => Prop)(implicit manifest: Manifest[T]) {
     def clazz = manifest.erasure
     def performValidCheck(): Prop = forAll(gen){jsonValue => validCheck(jsonValue)}
@@ -67,23 +68,27 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
   
   def generatorAndConversionSpec = jsonValueGenerators.map{generatorAndConversionCheck =>
     generatorAndConversionCheck.method ^ {
-      "For a " + generatorAndConversionCheck.clazz.getSimpleName ! generatorAndConversionCheck.performValidCheck() ^
-      "For any instance that isn't of type " + generatorAndConversionCheck.clazz.getSimpleName ! {
-        val gen: Gen[JSONValue] = frequency((jsonValueGenerators - generatorAndConversionCheck).map(generator => (1, generator.gen: Gen[JSONValue])).toSeq: _*)
-        check(generatorAndConversionCheck.performInvalidCheck(gen))
+      "For a " + generatorAndConversionCheck.clazz.getSimpleName ! check(generatorAndConversionCheck.performValidCheck())(minimalParams) ^
+      ((jsonValueGenerators - generatorAndConversionCheck)
+        .map{otherGeneratorAndConversionCheck: GeneratorAndConversionChecks[_ <: JSONValue] =>
+          ("Called on a " + otherGeneratorAndConversionCheck.clazz.getSimpleName) ! {
+            check(generatorAndConversionCheck.performInvalidCheck(otherGeneratorAndConversionCheck.gen))(minimalParams)
+          }: Fragments
+        }.reduceLeft(_ ^ _))
       } ^ end
-    }
-  }.reduceLeft(_ ^ _)
+    }.reduceLeft(_ ^ _)
   def optionalConversionSpec = optionalConversionChecks.map{optionalCheck =>
     optionalCheck.method ^ {
-      "For a " + optionalCheck.clazz.getSimpleName ! optionalCheck.performValidCheck() ^
-      "For a null value" ! optionalCheck.performNullCheck() ^
-      "For any instance that isn't of type " + optionalCheck.clazz.getSimpleName ! {
-        val gen: Gen[JSONValue] = frequency((optionalConversionChecks - optionalCheck).map(generator => (1, generator.gen: Gen[JSONValue])).toSeq: _*)
-        check(optionalCheck.performInvalidCheck(gen))
+      "For a " + optionalCheck.clazz.getSimpleName ! check(optionalCheck.performValidCheck())(minimalParams) ^
+      "For a null value" ! check(optionalCheck.performNullCheck())(minimalParams) ^
+      ((optionalConversionChecks - optionalCheck)
+        .map{otherOptionalConversionsChecks: OptionalConversionChecks[_ <: JSONValue] =>
+          ("Called on a " + otherOptionalConversionsChecks.clazz.getSimpleName) ! {
+            check(optionalCheck.performInvalidCheck(otherOptionalConversionsChecks.gen))(minimalParams)
+          }: Fragments
+        }.reduceLeft(_ ^ _))
       } ^ end
-    }
-  }.reduceLeft(_ ^ _)
+    }.reduceLeft(_ ^ _)
   
   def is = args.report(failtrace = true) ^ doubleSlashSpec ^ generatorAndConversionSpec ^ optionalConversionSpec
   

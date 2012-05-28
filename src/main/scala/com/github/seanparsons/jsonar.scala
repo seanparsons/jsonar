@@ -57,8 +57,8 @@ package object jsonar {
     def asByte(): ValidationNEL[JSONError, Byte] = validation.flatMap(_.asByte())
     def asString(): ValidationNEL[JSONError, String] = validation.flatMap(_.asString())
     def asBoolean(): ValidationNEL[JSONError, Boolean] = validation.flatMap(_.asBoolean())
-    def /(elementName: String): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_.search(elementName))
-    def search(elementName: String): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_.search(elementName))
+    def /(elementName: String): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_ / elementName)
+    def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_.search(firstElementName, otherElementNames: _*))
     def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = validation.flatMap(_.asMap())
     def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = validation.flatMap(_.asSeq())
   }

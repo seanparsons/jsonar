@@ -23,6 +23,14 @@ case class PrinterSpecification() extends Specification with DataTables with Sca
         ("parsedJSONValue = " + parsedJSONValue) |: jsonValue.successNel[JSONError] === parsedJSONValue
       }
     }
+  def prettyPrintedWithCRLFAndThenParsed = "Pretty printed with CRLF and then parsed generates the same structure" !
+    forAll(JSONGenerators.jsonValueGenerator().label("arrayOrObject")){jsonValue =>
+      val prettyPrintedValue = Printer.pretty(jsonValue).replace("\n", "\r\n")
+      ("prettyPrintedValue = " + prettyPrintedValue) |: {
+        val parsedJSONValue = Parser.parse(prettyPrintedValue)
+        ("parsedJSONValue = " + parsedJSONValue) |: jsonValue.successNel[JSONError] === parsedJSONValue
+      }
+    }
 
-  def is = "print" ^ "valid results" ! printSpec ^ prettyPrintedAndThenParsed
+  def is = "print" ^ "valid results" ! printSpec ^ prettyPrintedAndThenParsed ^ prettyPrintedWithCRLFAndThenParsed
 }

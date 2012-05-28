@@ -50,7 +50,7 @@ case class ReadmeExampleSpecification() extends Specification with ScalaCheck {
         friendsJSONObject <- friends.asJSONObject
         friendIDs <- friendsJSONObject / "1"
         friendIDArray <- friendIDs.asJSONArray
-      } yield (userName.value, friendIDArray.collect{case JSONNumber(int) => int}.toList)
+      } yield (userName.value, friendIDArray.elements.collect{case JSONNumber(int) => int}.toList)
       val expectedFriendsOfUser = ("Martin", List(BigDecimal(2), BigDecimal(3))).successNel[JSONError]
       friendsOfUser === expectedFriendsOfUser
     }

@@ -29,7 +29,7 @@ trait JSONLike {
   def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]]
   def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]]
   def /(elementName: String): ValidationNEL[JSONError, JSONValue]
-  def search(elementName: String): ValidationNEL[JSONError, JSONValue]
+  def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue]
 }
 
 sealed abstract class JSONError {
@@ -76,7 +76,7 @@ sealed abstract class JSONValue extends JSONLike {
   // JSONObject
   def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = invalidConversionError(this).failNel
   def /(elementName: String): ValidationNEL[JSONError, JSONValue] = subElementNotFoundError(this, elementName).failNel
-  def search(elementName: String): ValidationNEL[JSONError, JSONValue] = subElementNotFoundError(this, elementName).failNel
+  def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue] = subElementNotFoundError(this, firstElementName).failNel
 
   // JSONArray
   def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = invalidConversionError(this).failNel
@@ -148,35 +148,28 @@ case object JSONBoolTrue extends JSONBool {
 case object JSONBoolFalse extends JSONBool {
   val value = false
 }
-case class JSONObject(fields: Map[JSONString, JSONValue] = Map()) extends JSONValue with PartialFunction[JSONString, JSONValue] {
+case class JSONObject(fields: Map[JSONString, JSONValue] = Map()) extends JSONValue {
   def this(fields: (JSONString, JSONValue)*) = this(fields.toMap)
 
-  override def /(elementName: String): ValidationNEL[JSONError, JSONValue] = search(elementName)
-  override def search(elementName: String): ValidationNEL[JSONError, JSONValue] = {
+  override def /(elementName: String): ValidationNEL[JSONError, JSONValue] = {
     fields
       .get(JSONString(elementName))
       .map(jsonValue => jsonValue.successNel[JSONError])
       .getOrElse(subElementNotFoundError(this, elementName).failNel[JSONValue])
   }
+  override def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue] = (firstElementName +: otherElementNames).foldLeft(this.asInstanceOf[JSONValue].successNel[JSONError])(_ / _)
 
   override def asJSONObject(): ValidationNEL[JSONError, JSONObject] = this.successNel
   override def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = fields.successNel
-  override def apply(key: JSONString) = fields(key)
-  def isDefinedAt(key: JSONString) = fields.isDefinedAt(key)
-  override def toString() = "JSONObject(%s)".format(fields)
 }
 object JSONObject {
   def apply(fields: (JSONString, JSONValue)*): JSONObject = new JSONObject(fields.toMap)
 }
-case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue with Traversable[JSONValue] with PartialFunction[Int, JSONValue] {
-  def isDefinedAt(key: Int) = elements.isDefinedAt(key)
+case class JSONArray(elements: Seq[JSONValue] = Seq()) extends JSONValue {
   def this(first: JSONValue, rest: JSONValue*) = this(first +: rest)
 
   override def asJSONArray(): ValidationNEL[JSONError, JSONArray] = this.successNel
   override def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = elements.successNel
-  override def apply(position: Int) = elements(position)
-  def foreach[U](f: (JSONValue) => U) = elements.foreach(f)
-  override def toString() = "JSONArray(%s)".format(elements)
 }
 object JSONArray {
   def apply(first: JSONValue, rest: JSONValue*): JSONArray = new JSONArray(first +: rest)
