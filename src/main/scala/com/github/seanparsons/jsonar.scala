@@ -2,6 +2,10 @@ package com.github.seanparsons
 
 import scalaz._
 import Scalaz._
+import Lens._
+import scalaz.std._
+import Kleisli._
+import Validation._
 
 package object jsonar {
   implicit val jsonValueEqual: Equal[JSONValue] = Equal.equalA[JSONValue]
@@ -26,44 +30,62 @@ package object jsonar {
     val zero = new JSONString("")
   }
   implicit val jsonBoolMonoid: Monoid[JSONBool] = new Monoid[JSONBool] {
-    def append(first: JSONBool, second: => JSONBool) = if (first.value || second.value) JSONBoolTrue else JSONBoolFalse
+    def append(first: JSONBool, second: => JSONBool) = JSONBool(first.value || second.value)
     val zero = JSONBoolFalse
   }
-  implicit val jsonObjectMonoid: Monoid[JSONObject] = new Monoid[JSONObject] {
-    def append(first: JSONObject, second: => JSONObject) = JSONObject(first.fields ++ second.fields)
-    val zero = JSONObject()
-  }
-  implicit val jsonArrayMonoid: Monoid[JSONArray] = new Monoid[JSONArray] {
-    def append(first: JSONArray, second: => JSONArray) = JSONArray(first.elements ++ second.elements)
-    val zero = JSONArray()
-  }
-  implicit def validationToJSONLike(validation: ValidationNEL[JSONError, JSONValue]): JSONLike = new JSONLike {
-    def asJSONString: ValidationNEL[JSONError, JSONString] = validation.flatMap(_.asJSONString)
-    def asJSONNumber: ValidationNEL[JSONError, JSONNumber] = validation.flatMap(_.asJSONNumber)
-    def asJSONBool: ValidationNEL[JSONError, JSONBool] = validation.flatMap(_.asJSONBool)
-    def asJSONNull: ValidationNEL[JSONError, JSONNull] = validation.flatMap(_.asJSONNull)
-    def asJSONArray: ValidationNEL[JSONError, JSONArray] = validation.flatMap(_.asJSONArray)
-    def asJSONObject: ValidationNEL[JSONError, JSONObject] = validation.flatMap(_.asJSONObject)
-    def asOptionalJSONString: ValidationNEL[JSONError, Option[JSONString]] = validation.flatMap(_.asOptionalJSONString)
-    def asOptionalJSONNumber: ValidationNEL[JSONError, Option[JSONNumber]] = validation.flatMap(_.asOptionalJSONNumber)
-    def asOptionalJSONBool: ValidationNEL[JSONError, Option[JSONBool]] = validation.flatMap(_.asOptionalJSONBool)
-    def asOptionalJSONArray: ValidationNEL[JSONError, Option[JSONArray]] = validation.flatMap(_.asOptionalJSONArray)
-    def asOptionalJSONObject: ValidationNEL[JSONError, Option[JSONObject]] = validation.flatMap(_.asOptionalJSONObject)
-    def asBigDecimal(): ValidationNEL[JSONError, BigDecimal] = validation.flatMap(_.asBigDecimal())
-    def asBigInt(): ValidationNEL[JSONError, BigInt] = validation.flatMap(_.asBigInt())
-    def asLong(): ValidationNEL[JSONError, Long] = validation.flatMap(_.asLong())
-    def asInt(): ValidationNEL[JSONError, Int] = validation.flatMap(_.asInt())
-    def asShort(): ValidationNEL[JSONError, Short] = validation.flatMap(_.asShort())
-    def asByte(): ValidationNEL[JSONError, Byte] = validation.flatMap(_.asByte())
-    def asString(): ValidationNEL[JSONError, String] = validation.flatMap(_.asString())
-    def asBoolean(): ValidationNEL[JSONError, Boolean] = validation.flatMap(_.asBoolean())
-    def /(elementName: String): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_ / elementName)
-    def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_.search(firstElementName, otherElementNames: _*))
-    def asMap(): ValidationNEL[JSONError, Map[JSONString, JSONValue]] = validation.flatMap(_.asMap())
-    def asSeq(): ValidationNEL[JSONError, Seq[JSONValue]] = validation.flatMap(_.asSeq())
+
+  type PossibleJSONError[+T] = Validation[NonEmptyList[JSONError], T]
+  type ValueConversion[From, To] = Kleisli[PossibleJSONError, From, To]
+
+  implicit val bindPossibleJSONError: Bind[PossibleJSONError] = new Bind[PossibleJSONError]{
+    def bind[A, B](fa: PossibleJSONError[A])(f: (A) => PossibleJSONError[B]) = fa.flatMap(f)
+    def map[A, B](fa: PossibleJSONError[A])(f: (A) => B) = fa.map(f)
   }
 
-  def invalidConversionError[T](jsonValue: JSONValue)(implicit targetManifest: Manifest[T]): JSONError = InvalidConversionJSONError(jsonValue, targetManifest)
+  implicit def validationToJSONLike(validation: PossibleJSONError[JSONValue]): JSONLike = new JSONLike {
+    def /(elementName: String): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_ / elementName)
+    def search(firstElementName: String, otherElementNames: String*): ValidationNEL[JSONError, JSONValue] = validation.flatMap(_.search(firstElementName, otherElementNames: _*))
+    def as[T](implicit conversion: ValueConversion[JSONValue, T]): PossibleJSONError[T] = validation.flatMap(_.as[T])
+    def asOptional[T](implicit conversion: ValueConversion[JSONValue, T], identifyNoneFrom: IdentifyNone[JSONValue]): PossibleJSONError[Option[T]] = validation.flatMap(_.asOptional[T])
+  }
+
+  implicit val jsonValueIdentifyNone: IdentifyNone[JSONValue] = new IdentifyNone[JSONValue] {
+    def isNone(value: JSONValue) = value.foldNull(true, false)
+  }
+
+  implicit val jsonValueToJSONStringConversion: ValueConversion[JSONValue, JSONString] = kleisli[PossibleJSONError, JSONValue, JSONString]((from: JSONValue) => from.foldJSONString(_.successNel[JSONError], invalidConversionError[JSONString](from).failNel[JSONString]))
+  implicit val jsonValueToJSONNullConversion: ValueConversion[JSONValue, JSONNull] = kleisli[PossibleJSONError, JSONValue, JSONNull]((from: JSONValue) => from.foldJSONNull(_.successNel[JSONError], invalidConversionError[JSONNull](from).failNel[JSONNull]))
+  implicit val jsonValueToJSONBoolConversion: ValueConversion[JSONValue, JSONBool] = kleisli[PossibleJSONError, JSONValue, JSONBool]((from: JSONValue) => from.foldJSONBool(_.successNel[JSONError], invalidConversionError[JSONBool](from).failNel[JSONBool]))
+  implicit val jsonValueToJSONNumberConversion: ValueConversion[JSONValue, JSONNumber] = kleisli[PossibleJSONError, JSONValue, JSONNumber]((from: JSONValue) => from.foldJSONNumber(_.successNel[JSONError], invalidConversionError[JSONNumber](from).failNel[JSONNumber]))
+  implicit val jsonValueToJSONObjectConversion: ValueConversion[JSONValue, JSONObject] = kleisli[PossibleJSONError, JSONValue, JSONObject]((from: JSONValue) => from.foldJSONObject(_.successNel[JSONError], invalidConversionError[JSONObject](from).failNel[JSONObject]))
+  implicit val jsonValueToJSONArrayConversion: ValueConversion[JSONValue, JSONArray] = kleisli[PossibleJSONError, JSONValue, JSONArray]((from: JSONValue) => from.foldJSONArray(_.successNel[JSONError], invalidConversionError[JSONArray](from).failNel[JSONArray]))
+
+  @inline
+  private[this] def convertTo[From, To](conversion: From => To)(implicit manifest: Manifest[To]): ValueConversion[From, To] = kleisli[PossibleJSONError, From, To]{(from: From) =>
+    try {
+      conversion(from).successNel
+    } catch {
+      case throwable => invalidConversionError[To](from).failNel
+    }
+  }
+
+  implicit val jsonNumberToBigDecimalConversion: ValueConversion[JSONNumber, BigDecimal] = kleisli[PossibleJSONError, JSONNumber, BigDecimal]((from: JSONNumber) => from.value.successNel[JSONError])
+  implicit val jsonNumberToBigIntConversion: ValueConversion[JSONNumber, BigInt] = convertTo[JSONNumber, BigInt](_.value.toBigInt)
+  implicit val jsonNumberToLongConversion: ValueConversion[JSONNumber, Long] = convertTo[JSONNumber, Long](_.value.toLongExact)
+  implicit val jsonNumberToIntConversion: ValueConversion[JSONNumber, Int] = convertTo[JSONNumber, Int](_.value.toIntExact)
+  implicit val jsonNumberToShortConversion: ValueConversion[JSONNumber, Short] = convertTo[JSONNumber, Short](_.value.toShortExact)
+  implicit val jsonNumberToByteConversion: ValueConversion[JSONNumber, Byte] = convertTo[JSONNumber, Byte](_.value.toByteExact)
+  implicit val jsonValueToBigDecimalConversion: ValueConversion[JSONValue, BigDecimal] = jsonValueToJSONNumberConversion >=> jsonNumberToBigDecimalConversion
+  implicit val jsonValueToBigIntConversion: ValueConversion[JSONValue, BigInt] = jsonValueToJSONNumberConversion >=> jsonNumberToBigIntConversion
+  implicit val jsonValueToLongConversion: ValueConversion[JSONValue, Long] = jsonValueToJSONNumberConversion >=> jsonNumberToLongConversion
+  implicit val jsonValueToIntConversion: ValueConversion[JSONValue, Int] = jsonValueToJSONNumberConversion >=> jsonNumberToIntConversion
+  implicit val jsonValueToShortConversion: ValueConversion[JSONValue, Short] = jsonValueToJSONNumberConversion >=> jsonNumberToShortConversion
+  implicit val jsonValueToByteConversion: ValueConversion[JSONValue, Byte] = jsonValueToJSONNumberConversion >=> jsonNumberToByteConversion
+
+  implicit val jsonStringToStringConversion: ValueConversion[JSONString, String] = kleisli[PossibleJSONError, JSONString, String]((from: JSONString) => from.value.successNel[JSONError])
+  implicit val jsonValueToStringConversion: ValueConversion[JSONValue, String] = jsonValueToJSONStringConversion >=> jsonStringToStringConversion
+
+  def invalidConversionError[T](value: Any)(implicit targetManifest: Manifest[T]): JSONError = InvalidConversionJSONError(value, targetManifest)
   def parseError(message: String): JSONError = JSONParseError(message)
   def subElementNotFoundError(jsonValue: JSONValue, elementName: String): JSONError = SubElementNotFoundJSONError(jsonValue, elementName)
 }

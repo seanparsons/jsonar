@@ -10,6 +10,7 @@ import org.scalacheck.{Prop, Gen}
 import org.specs2._
 import org.specs2.specification._
 import org.specs2.matcher.DataTables
+import com.github.seanparsons.jsonar._
 
 case class JSONValueSpecification() extends Specification with ScalaCheck with DataTables {
   val minimalParams = set(minTestsOk -> 3)
@@ -20,12 +21,12 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     def performInvalidCheck(gen: Gen[JSONValue]): Prop = forAll(gen){jsonValue => invalidCheck(jsonValue)}
   }
   val jsonValueGenerators = Set[GeneratorAndConversionChecks[_ <: JSONValue]](
-    new GeneratorAndConversionChecks[JSONNull]("asJSONNull", jsonNothingGenerator, (jsonNull) => jsonNull.asJSONNull === jsonNull.success, (jsonValue) => jsonValue.asJSONNull.isFailure),
-    new GeneratorAndConversionChecks[JSONNumber]("asJSONNumber", jsonNumberGenerator, (jsonNumber) => jsonNumber.asJSONNumber === jsonNumber.success, (jsonValue) => jsonValue.asJSONNumber.isFailure),
-    new GeneratorAndConversionChecks[JSONString]("asJSONString", jsonStringGenerator, (jsonString) => jsonString.asJSONString === jsonString.success, (jsonValue) => jsonValue.asJSONString.isFailure),
-    new GeneratorAndConversionChecks[JSONBool]("asJSONBool", jsonBoolGenerator, (jsonBool) => jsonBool.asJSONBool === jsonBool.success, (jsonValue) => jsonValue.asJSONBool.isFailure),
-    new GeneratorAndConversionChecks[JSONArray]("asJSONArray", jsonArrayGenerator(), (jsonArray) => jsonArray.asJSONArray === jsonArray.success, (jsonValue) => jsonValue.asJSONArray.isFailure),
-    new GeneratorAndConversionChecks[JSONObject]("asJSONObject", jsonObjectGenerator(), (jsonObject) => jsonObject.asJSONObject === jsonObject.success, (jsonValue) => jsonValue.asJSONObject.isFailure)
+    GeneratorAndConversionChecks[JSONNull]("as[JSONNull]", jsonNothingGenerator, (jsonNull) => jsonNull.as[JSONNull] === jsonNull.success, (jsonValue) => jsonValue.as[JSONNull].isFailure),
+    GeneratorAndConversionChecks[JSONNumber]("as[JSONNumber]", jsonNumberGenerator, (jsonNumber) => jsonNumber.as[JSONNumber] === jsonNumber.success, (jsonValue) => jsonValue.as[JSONNumber].isFailure),
+    GeneratorAndConversionChecks[JSONString]("asJSONString", jsonStringGenerator, (jsonString) => jsonString.as[JSONString] === jsonString.success, (jsonValue) => jsonValue.as[JSONString].isFailure),
+    GeneratorAndConversionChecks[JSONBool]("as[JSONBool]", jsonBoolGenerator, (jsonBool) => jsonBool.as[JSONBool] === jsonBool.success, (jsonValue) => jsonValue.as[JSONBool].isFailure),
+    GeneratorAndConversionChecks[JSONArray]("as[JSONArray]", jsonArrayGenerator(), (jsonArray) => jsonArray.as[JSONArray] === jsonArray.success, (jsonValue) => jsonValue.as[JSONArray].isFailure),
+    GeneratorAndConversionChecks[JSONObject]("as[JSONObject]", jsonObjectGenerator(), (jsonObject) => jsonObject.as[JSONObject] === jsonObject.success, (jsonValue) => jsonValue.as[JSONObject].isFailure)
   )
 
   case class OptionalConversionChecks[T <: JSONValue](method: String, gen: Gen[T], validCheck: (T) => Prop, invalidCheck: (JSONValue) => Prop, nullCheck: (JSONNull) => Prop)(implicit manifest: Manifest[T]) {
@@ -35,11 +36,11 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
     def performNullCheck(): Prop = forAll(jsonNothingGenerator){jsonNull => nullCheck(jsonNull)}
   }
   val optionalConversionChecks = Set[OptionalConversionChecks[_ <: JSONValue]](
-    new OptionalConversionChecks[JSONNumber]("asOptionalJSONNumber", jsonNumberGenerator, (jsonNumber) => jsonNumber.asOptionalJSONNumber() === jsonNumber.some.success, (jsonValue) => jsonValue.asOptionalJSONNumber().isFailure, (jsonNull) => jsonNull.asOptionalJSONNumber() === scalazNone[JSONNumber].successNel[JSONError]),
-    new OptionalConversionChecks[JSONString]("asOptionalJSONString", jsonStringGenerator, (jsonString) => jsonString.asOptionalJSONString() === jsonString.some.success, (jsonValue) => jsonValue.asOptionalJSONString().isFailure, (jsonNull) => jsonNull.asOptionalJSONString() === scalazNone[JSONString].successNel[JSONError]),
-    new OptionalConversionChecks[JSONBool]("asOptionalJSONBool", jsonBoolGenerator, (jsonBool) => jsonBool.asOptionalJSONBool() === jsonBool.some.success, (jsonValue) => jsonValue.asOptionalJSONBool().isFailure, (jsonNull) => jsonNull.asOptionalJSONBool() === scalazNone[JSONBool].successNel[JSONError]),
-    new OptionalConversionChecks[JSONArray]("asOptionalJSONArray", jsonArrayGenerator(), (jsonArray) => jsonArray.asOptionalJSONArray() === jsonArray.some.success, (jsonValue) => jsonValue.asOptionalJSONArray().isFailure, (jsonNull) => jsonNull.asOptionalJSONArray() === scalazNone[JSONArray].successNel[JSONError]),
-    new OptionalConversionChecks[JSONObject]("asOptionalJSONObject", jsonObjectGenerator(), (jsonObject) => jsonObject.asOptionalJSONObject() === jsonObject.some.success, (jsonValue) => jsonValue.asOptionalJSONObject().isFailure, (jsonNull) => jsonNull.asOptionalJSONObject() === scalazNone[JSONObject].successNel[JSONError])
+    OptionalConversionChecks[JSONNumber]("asOptional[JSONNumber]", jsonNumberGenerator, (jsonNumber) => jsonNumber.asOptional[JSONNumber] === jsonNumber.some.success, (jsonValue) => jsonValue.asOptional[JSONNumber].isFailure, (jsonNull) => jsonNull.asOptional[JSONNumber] === scalazNone[JSONNumber].successNel[JSONError]),
+    OptionalConversionChecks[JSONString]("asOptional[JSONString]", jsonStringGenerator, (jsonString) => jsonString.asOptional[JSONString] === jsonString.some.success, (jsonValue) => jsonValue.asOptional[JSONString].isFailure, (jsonNull) => jsonNull.asOptional[JSONString] === scalazNone[JSONString].successNel[JSONError]),
+    OptionalConversionChecks[JSONBool]("asOptional[JSONBool]", jsonBoolGenerator, (jsonBool) => jsonBool.asOptional[JSONBool] === jsonBool.some.success, (jsonValue) => jsonValue.asOptional[JSONBool].isFailure, (jsonNull) => jsonNull.asOptional[JSONBool] === scalazNone[JSONBool].successNel[JSONError]),
+    OptionalConversionChecks[JSONArray]("asOptional[JSONArray]", jsonArrayGenerator(), (jsonArray) => jsonArray.asOptional[JSONArray] === jsonArray.some.success, (jsonValue) => jsonValue.asOptional[JSONArray].isFailure, (jsonNull) => jsonNull.asOptional[JSONArray] === scalazNone[JSONArray].successNel[JSONError]),
+    OptionalConversionChecks[JSONObject]("asOptional[JSONObject]", jsonObjectGenerator(), (jsonObject) => jsonObject.asOptional[JSONObject] === jsonObject.some.success, (jsonValue) => jsonValue.asOptional[JSONObject].isFailure, (jsonNull) => jsonNull.asOptional[JSONObject] === scalazNone[JSONObject].successNel[JSONError])
   )
   
   def doubleSlashSpec = "/" ^
@@ -55,13 +56,13 @@ case class JSONValueSpecification() extends Specification with ScalaCheck with D
       val expectedResult: Validation[String, (JSONString, JSONArray)] = (JSONString("Sean"), JSONArray(JSONString("Item 1"), JSONString("Item 2"))).success[String]
       val nameAndOrders = for {
         users <- jsonObject / "users"
-        usersJSONObject <- users.asJSONObject
+        usersJSONObject <- users.as[JSONObject]
         usernameJSONValue <- usersJSONObject / "1"
-        username <- usernameJSONValue.asJSONString
+        username <- usernameJSONValue.as[JSONString]
         orders <- jsonObject / "orders"
-        ordersJSONObject <- orders.asJSONObject
+        ordersJSONObject <- orders.as[JSONObject]
         userOrders <- ordersJSONObject / "1"
-        ordersJSONArray <- userOrders.asJSONArray
+        ordersJSONArray <- userOrders.as[JSONArray]
       } yield (username, userOrders)
       nameAndOrders must_== expectedResult
     } ^ end

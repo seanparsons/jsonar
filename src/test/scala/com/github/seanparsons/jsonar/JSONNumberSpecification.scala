@@ -13,7 +13,7 @@ import JSONGenerators._
 
 case class JSONNumberSpecification() extends Specification with ScalaCheck {
   def createNumberValueSpec[T](name: String,
-                               retrieveValue: (JSONNumber) => ValidationNEL[JSONError, T],
+                               retrieveValue: (JSONNumber) => PossibleJSONError[T],
                                validRange: Gen[T],
                                validBuilder: (T) => JSONNumber,
                                invalidUpperRange: Option[Gen[BigDecimal]],
@@ -49,42 +49,42 @@ case class JSONNumberSpecification() extends Specification with ScalaCheck {
 
   def byteValueSpec = createNumberValueSpec[Byte](
     "byteValue",
-    (jsonNumber) => jsonNumber.asByte(),
+    (jsonNumber) => jsonNumber.as[Byte],
     chooseNum(Byte.MinValue, Byte.MaxValue),
     (byte) => new JSONNumber(BigDecimal(byte)),
     (arbitrary[BigDecimal].filter(_ > BigDecimal(Byte.MaxValue))).some,
     (arbitrary[BigDecimal].filter(_ < BigDecimal(Byte.MinValue))).some)
   def shortValueSpec = createNumberValueSpec[Short](
     "shortValue",
-    (jsonNumber) => jsonNumber.asShort(),
+    (jsonNumber) => jsonNumber.as[Short],
     chooseNum(Short.MinValue, Short.MaxValue),
     (short) => new JSONNumber(BigDecimal(short)),
     (arbitrary[BigDecimal].filter(_ > BigDecimal(Short.MaxValue))).some,
     (arbitrary[BigDecimal].filter(_ < BigDecimal(Short.MinValue))).some)
   def intValueSpec = createNumberValueSpec[Int](
     "intValue",
-    (jsonNumber) => jsonNumber.asInt(),
+    (jsonNumber) => jsonNumber.as[Int],
     chooseNum(Int.MinValue, Int.MaxValue),
     (int) => new JSONNumber(BigDecimal(int)),
     (arbitrary[BigDecimal].filter(_ > BigDecimal(Int.MaxValue))).some,
     (arbitrary[BigDecimal].filter(_ < BigDecimal(Int.MinValue))).some)
   def longValueSpec = createNumberValueSpec[Long](
     "longValue",
-    (jsonNumber) => jsonNumber.asLong(),
+    (jsonNumber) => jsonNumber.as[Long],
     chooseNum(Long.MinValue, Long.MaxValue),
     (long) => new JSONNumber(BigDecimal(long)),
     (posNum[Long].map(long => BigDecimal(long + 1) + BigDecimal(Long.MaxValue))).some,
     (negNum[Long].map(long => BigDecimal(long - 1) + BigDecimal(Long.MinValue))).some)
   def bigIntValueSpec = createNumberValueSpec[BigInt](
     "bigIntValue",
-    (jsonNumber) => jsonNumber.asBigInt(),
+    (jsonNumber) => jsonNumber.as[BigInt],
     arbitrary[Long].map(long => BigInt(long)),  // Ensure this value can be represented by a BigDecimal.
     (bigInt) => new JSONNumber(BigDecimal(bigInt)),
     None,
     None)
   def bigDecimalValueSpec = createNumberValueSpec[BigDecimal](
     "bigDecimalValue",
-    (jsonNumber) => jsonNumber.asBigDecimal(),
+    (jsonNumber) => jsonNumber.as[BigDecimal],
     arbitrary[BigDecimal],
     (bigDecimal) => new JSONNumber(bigDecimal),
     None,

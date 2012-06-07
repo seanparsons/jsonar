@@ -40,25 +40,24 @@ case class ReadmeExampleSpecification() extends Specification with ScalaCheck {
     "For comprehension example" ! {
       val friendsOfUser = for {
         parsed <- Parser.parse(complexJSON)
-        parsedJSONObject <- parsed.asJSONObject
+        parsedJSONObject <- parsed.as[JSONObject]
         users <- parsedJSONObject / "users"
-        usersJSONObject <- users.asJSONObject
+        usersJSONObject <- users.as[JSONObject]
         user <- usersJSONObject / "1"
-        userName <- user.asJSONString
-        userJSONString <- user.asJSONString
+        userName <- user.as[String]
         friends <- parsedJSONObject / "friends"
-        friendsJSONObject <- friends.asJSONObject
+        friendsJSONObject <- friends.as[JSONObject]
         friendIDs <- friendsJSONObject / "1"
-        friendIDArray <- friendIDs.asJSONArray
-      } yield (userName.value, friendIDArray.elements.collect{case JSONNumber(int) => int}.toList)
+        friendIDArray <- friendIDs.as[JSONArray]
+      } yield (userName, friendIDArray.elements.collect{case JSONNumber(int) => int}.toList)
       val expectedFriendsOfUser = ("Martin", List(BigDecimal(2), BigDecimal(3))).successNel[JSONError]
       friendsOfUser === expectedFriendsOfUser
     }
     "Complete for comprehension example" ! {
       val friendsOfUser = for {
         parsed <- Parser.parse(complexJSON)
-        user <- parsed.asJSONObject.flatMap(_.search("users")).flatMap(_.asJSONObject).flatMap(_.search("1")).flatMap(_.asJSONString).map(_.value)
-        friendIDs <- parsed.asJSONObject.flatMap(_.search("friends")).flatMap(_.asJSONObject).flatMap(_.search("1")).flatMap(_.asJSONArray).map(_.elements.collect{case JSONNumber(value) => value})
+        user <- parsed.as[JSONObject].flatMap(_.search("users")).flatMap(_.as[JSONObject]).flatMap(_.search("1")).flatMap(_.as[String])
+        friendIDs <- parsed.as[JSONObject].flatMap(_.search("friends")).flatMap(_.as[JSONObject]).flatMap(_.search("1")).flatMap(_.as[JSONArray]).map(_.elements.collect{case JSONNumber(value) => value})
       } yield (user, friendIDs.toList)
       val expectedFriendsOfUser = ("Martin", List(BigDecimal(2), BigDecimal(3))).successNel[JSONError]
       friendsOfUser === expectedFriendsOfUser

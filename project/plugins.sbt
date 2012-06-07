@@ -4,8 +4,6 @@ resolvers += Resolver.url("sbt-plugin-releases", new URL("http://scalasbt.artifa
 
 resolvers += "gseitz@github" at "http://gseitz.github.com/maven/"
 
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.4")
-
 addSbtPlugin("com.jsuereth" % "xsbt-gpg-plugin" % "0.6")
 
 addSbtPlugin("me.lessis" % "ls-sbt" % "0.1.1")
